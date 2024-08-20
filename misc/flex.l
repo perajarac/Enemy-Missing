@@ -1,7 +1,9 @@
 %{
-#include <iostream>
-#include "../misc/parser.hpp"
-using namespace std;
+#include <stdio.h>
+#include "../inc/parser.hpp"
+#include "../inc/assembler.hpp"
+int line_number = 1;
+
 %}
 
 %option noyywrap
@@ -47,6 +49,7 @@ string \"[a-zA-Z0-9_ ]*\"
 enter \n
 digit [0-9]
 hex 0[xX][0-9a-fA-F]+
+ident [a-zA-Z_][a-zA-Z0-9_]*
 
 gpr (%r([0-9]|1[0-3]))
 sp (%sp|%r14)
@@ -66,6 +69,7 @@ dolar \$
 tz ;
 dt :
 z ,
+unknown .
 
 %%
 {global} { return (TOKEN_GLOBAL); }
@@ -76,39 +80,33 @@ z ,
 {ascii} { return (TOKEN_ASCII); }
 {end}   { return (TOKEN_END); }
 
-{halt} {yylval.opcode = HALT_CODE; return (TOKEN_HALT); }
-{int}  {yylval.opcode = INT_CODE; return (TOKEN_INT); }
-{iret} {yylval.opcode = IRET_CODE; return (TOKEN_IRET); }
-{call} {yylval.opcode = CALL_CODE; return (TOKEN_CALL); }
-{ret} {yylval.opcode = RET_CODE; return (TOKEN_RET); }
-{jmp} {yylval.opcode = JMP_CODE; return (TOKEN_JMP); }
-{beq} {yylval.opcode = BEQ_CODE; return (TOKEN_BEQ); }
-{bne} {yylval.opcode = BNE_CODE; return (TOKEN_BNE); }
-{bgt} {yylval.opcode = BGT_CODE; return (TOKEN_BGT); }
-{push} {yylval.opcode = PUSH_CODE; return (TOKEN_PUSH); }
-{pop} {yylval.opcode = POP_CODE; return (TOKEN_POP); }
-{xchg} {yylval.opcode = XCHG_CODE; return (TOKEN_XCHG); }
-{add} {yylval.opcode = ADD_CODE; return (TOKEN_ADD); }
-{sub} {yylval.opcode = SUB_CODE; return (TOKEN_SUB); }
-{mul} {yylval.opcode = MUL_CODE; return (TOKEN_MUL); }
-{div} {yylval.opcode = DIV_CODE; return (TOKEN_DIV); }
-{not} {yylval.opcode = NOT_CODE; return (TOKEN_NOT); }
-{and} {yylval.opcode = AND_CODE; return (TOKEN_AND); }
-{or} {yylval.opcode = OR_CODE; return (TOKEN_OR); }
-{xor} {yylval.opcode = XOR_CODE; return (TOKEN_XOR); }
-{shl} {yylval.opcode = SHL_CODE; return (TOKEN_SHL); }
-{shr} {yylval.opcode = SHR_CODE; return (TOKEN_SHR); }
-{ld} {yylval.opcode = LD_CODE; return (TOKEN_LD); }
-{st} {yylval.opcode = ST_CODE; return (TOKEN_ST); }
-{csrrd} {yylval.opcode = CSRRD_CODE; return (TOKEN_CSRRD); }
-{csrwr} {yylval.opcode = CSRWR_CODE; return (TOKEN_CSRWR); }
+{halt} {yylval.op_code = Assembler::instruction::HALT_CODE; return (TOKEN_HALT); }
+{int}  {yylval.op_code = Assembler::instruction::INT_CODE; return (TOKEN_INT); }
+{iret} {yylval.op_code = Assembler::instruction::IRET_CODE; return (TOKEN_IRET); }
+{call} {yylval.op_code = Assembler::instruction::CALL_CODE; return (TOKEN_CALL); }
+{ret} {yylval.op_code = Assembler::instruction::RET_CODE; return (TOKEN_RET); }
+{jmp} {yylval.op_code = Assembler::instruction::JMP_CODE; return (TOKEN_JMP); }
+{beq} {yylval.op_code = Assembler::instruction::BEQ_CODE; return (TOKEN_BEQ); }
+{bne} {yylval.op_code = Assembler::instruction::BNE_CODE; return (TOKEN_BNE); }
+{bgt} {yylval.op_code = Assembler::instruction::BGT_CODE; return (TOKEN_BGT); }
+{push} {yylval.op_code = Assembler::instruction::PUSH_CODE; return (TOKEN_PUSH); }
+{pop} {yylval.op_code = Assembler::instruction::POP_CODE; return (TOKEN_POP); }
+{xchg} {yylval.op_code = Assembler::instruction::XCHG_CODE; return (TOKEN_XCHG); }
+{add} {yylval.op_code = Assembler::instruction::ADD_CODE; return (TOKEN_ADD); }
+{sub} {yylval.op_code = Assembler::instruction::SUB_CODE; return (TOKEN_SUB); }
+{mul} {yylval.op_code = Assembler::instruction::MUL_CODE; return (TOKEN_MUL); }
+{div} {yylval.op_code = Assembler::instruction::DIV_CODE; return (TOKEN_DIV); }
+{not} {yylval.op_code = Assembler::instruction::NOT_CODE; return (TOKEN_NOT); }
+{and} {yylval.op_code = Assembler::instruction::AND_CODE; return (TOKEN_AND); }
+{or} {yylval.op_code = Assembler::instruction::OR_CODE; return (TOKEN_OR); }
+{xor} {yylval.op_code = Assembler::instruction::XOR_CODE; return (TOKEN_XOR); }
+{shl} {yylval.op_code = Assembler::instruction::SHL_CODE; return (TOKEN_SHL); }
+{shr} {yylval.op_code = Assembler::instruction::SHR_CODE; return (TOKEN_SHR); }
+{ld} {yylval.op_code = Assembler::instruction::LD_CODE; return (TOKEN_LD); }
+{st} {yylval.op_code = Assembler::instruction::ST_CODE; return (TOKEN_ST); }
+{csrrd} {yylval.op_code = Assembler::instruction::CSRRD_CODE; return (TOKEN_CSRRD); }
+{csrwr} {yylval.op_code = Assembler::instruction::CSRWR_CODE; return (TOKEN_CSRWR); }
 
-/* {gpr} {yylval.reg = getNums(yytext); return (TOKEN_GPR); }
-{sp} {yylval.reg = SP_CODE; return (TOKEN_GPR); }
-{pc} {yylval.reg = PC_CODE; return (TOKEN_GPR); }
-{sstatus} {yylval.reg = STATUS_CODE; return (TOKEN_STATUS); }
-{handler} {yylval.reg = HANDLER_CODE; return (TOKEN_HANDLER); }
-{cause} {yylval.reg = CAUSE_CODE; return (TOKEN_CAUSE); } */
 
 {lz}      { return (TOKEN_LPAR); }
 {dz}      { return (TOKEN_RPAR); }
@@ -124,16 +122,20 @@ z ,
 
 {comment} { }
 {wspace}        {  }
-{enter} { line_number++; }
+{enter} {line_number++; }
+{ident} {return TOKEN_IDENT;}
 
-{string} { yylval.ident = strdup(yytext); return TOKEN_STRING; }
-{digit} { yylval.num = atoi(yytext); return TOKEN_NUM; }
-{hex} { yylval.num = strtoq(yytext, NULL, 16); return TOKEN_NUM; }
+{string} {yylval.ident = strdup(yytext); return TOKEN_STRING; }
+{digit} {yylval.num = atoi(yytext); return TOKEN_NUM; }
+{hex} {yylval.num = strtoq(yytext, NULL, 16); return TOKEN_NUM; }
+
+{gpr} {yylval.num = atoi(yytext + 2); return TOKEN_REG;}
+{sp} {yylval.num = 14; return TOKEN_SP;}
+{pc} {yylval.num = 15; return TOKEN_PC;}
+
+{sstatus} {yylval.ident = strdup(yytext); return TOKEN_STATUS;}
+{handler} {yylval.ident = strdup(yytext); return TOKEN_HANDLER;}
+{cause} {yylval.ident = strdup(yytext); return TOKEN_CAUSE;}
 
 %%
 
-
-int main(){
-    yylex();
-    return 0;
-}
