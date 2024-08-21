@@ -7,7 +7,7 @@
 
 halt
 int
-add %r1, %r3
+add %pc, %r3
 sub %r1, %r3
 mul %r1, %r3
 div %r4, %r8

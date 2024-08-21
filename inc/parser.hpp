@@ -100,13 +100,11 @@ extern int yydebug;
     TOKEN_COLON = 301,             /* TOKEN_COLON  */
     TOKEN_COMMA = 302,             /* TOKEN_COMMA  */
     TOKEN_REG = 303,               /* TOKEN_REG  */
-    TOKEN_SP = 304,                /* TOKEN_SP  */
-    TOKEN_PC = 305,                /* TOKEN_PC  */
-    TOKEN_STATUS = 306,            /* TOKEN_STATUS  */
-    TOKEN_HANDLER = 307,           /* TOKEN_HANDLER  */
-    TOKEN_CAUSE = 308,             /* TOKEN_CAUSE  */
-    TOKEN_NUM = 309,               /* TOKEN_NUM  */
-    TOKEN_STRING = 310             /* TOKEN_STRING  */
+    TOKEN_STATUS = 304,            /* TOKEN_STATUS  */
+    TOKEN_HANDLER = 305,           /* TOKEN_HANDLER  */
+    TOKEN_CAUSE = 306,             /* TOKEN_CAUSE  */
+    TOKEN_NUM = 307,               /* TOKEN_NUM  */
+    TOKEN_STRING = 308             /* TOKEN_STRING  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -122,7 +120,7 @@ union YYSTYPE
 		char* ident;
 	
 
-#line 126 "inc/parser.hpp"
+#line 124 "inc/parser.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

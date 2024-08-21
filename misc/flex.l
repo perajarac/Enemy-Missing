@@ -130,8 +130,8 @@ unknown .
 {hex} {yylval.num = strtoq(yytext, NULL, 16); return TOKEN_NUM; }
 
 {gpr} {yylval.num = atoi(yytext + 2); return TOKEN_REG;}
-{sp} {yylval.num = 14; return TOKEN_SP;}
-{pc} {yylval.num = 15; return TOKEN_PC;}
+{sp} {yylval.num = 14; return TOKEN_REG;}
+{pc} {yylval.num = 15; return TOKEN_REG;}
 
 {sstatus} {yylval.ident = strdup(yytext+1); return TOKEN_STATUS;}
 {handler} {yylval.ident = strdup(yytext+1); return TOKEN_HANDLER;}

@@ -76,8 +76,6 @@
 	%token TOKEN_COMMA   // Comma ,
 
 	%token<num> TOKEN_REG   // General Purpose Registers (r0-r13)
-	%token TOKEN_SP   // Stack Pointer Register (%sp, %r14)
-	%token TOKEN_PC   // Program Counter Register (%pc, %r15)
 
 
 	%token<ident> TOKEN_STATUS   // Status Register
