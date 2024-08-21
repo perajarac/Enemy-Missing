@@ -1,7 +1,7 @@
 # Targets
 TARGET = main
 # OBJS = src/assembler.o src/main.o src/flex.o src/parser.o
-OBJS = src/assembler.o src/flex.o src/parser.o
+OBJS  = src/assembler.o src/parser.o src/flex.o
 
 # Default target
 all: $(TARGET)
@@ -15,7 +15,7 @@ src/assembler.o: src/assembler.cpp inc/assembler.hpp
 	g++ -c -o $@ $<
 
 # src/main.o: src/main.cpp inc/parser.hpp
-# 	g++ -c -o $@ $<
+#     g++ -c -o $@ $<
 
 # Generate .cpp files from .l and .y files
 src/flex.cpp: misc/flex.l
@@ -34,6 +34,3 @@ src/parser.o: src/parser.cpp
 # Clean target
 clean:
 	rm -f $(TARGET) $(OBJS) src/flex.cpp src/parser.cpp src/parser.output assout.txt
-
-# Phony targets
-.PHONY: all clean

@@ -115,13 +115,14 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 20 "misc/parser.y"
+#line 22 "misc/parser.y"
 
-    int num;
-	int op_code;
-    char* ident;
+		int num;
+		int op_code;
+		char* ident;
+	
 
-#line 125 "inc/parser.hpp"
+#line 126 "inc/parser.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

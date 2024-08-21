@@ -28,37 +28,37 @@ void Assembler::handle_instruction(instruction op_code, std::vector<int> operand
             break;
         }
         case ADD_CODE:{
-            arithmetic_operation("50",operands,current_address);
+            arithmetic_operation("50",operands);
             break;
         }
         case SUB_CODE:{
-            arithmetic_operation("51",operands,current_address);
+            arithmetic_operation("51",operands);
             break;
         }case MUL_CODE:{
-            arithmetic_operation("52",operands,current_address);
+            arithmetic_operation("52",operands);
             break;
         }case DIV_CODE:{
-            arithmetic_operation("53",operands,current_address);
+            arithmetic_operation("53",operands);
             break;
         }
         case NOT_CODE:{
-            arithmetic_operation("60",operands,current_address);
+            arithmetic_operation("60",operands);
             break;
         }
         case AND_CODE:{
-            arithmetic_operation("61",operands,current_address);
+            arithmetic_operation("61",operands);
             break;
         }case OR_CODE:{
-            arithmetic_operation("62",operands,current_address);
+            arithmetic_operation("62",operands);
             break;
         }case XOR_CODE:{
-            arithmetic_operation("63",operands,current_address);
+            arithmetic_operation("63",operands);
             break;
         }case SHL_CODE:{
-            arithmetic_operation("70",operands,current_address);
+            arithmetic_operation("70",operands);
             break;
         }case SHR_CODE:{
-            arithmetic_operation("71",operands,current_address);
+            arithmetic_operation("71",operands);
             break;
         }case XCHG_CODE:{
             int reg1, reg2, reg3;
@@ -108,14 +108,12 @@ void Assembler::write_memory_content(){
         }else{
             
             ass_output << "\t" << memory_content[current_address].second;
-
         }
     }
-
     ass_output.close();
 }
 
-void Assembler::arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands, unsigned& current_address){
+void Assembler::arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands){
             int reg1, reg2, reg3;
             
             reg1 = operands[1];
@@ -132,12 +130,24 @@ void Assembler::arithmetic_operation(const std::string& arithmetic_code, const s
             memory_content.push_back(std::make_pair(current_address++, "00"));
 }
 
-void Assembler::handle_sys_regr(std::string& op_code, int operand){
-    if(op_code == "status"){
-        
-    }else if(op_code == "handler"){
+void Assembler::handle_sys_regr(std::string& op_code, unsigned reg){
+    memory_content.push_back(std::make_pair(current_address++, "90"));
+    std::stringstream ss;
+    ss << std::hex << reg;
 
-    }else{
+    memory_content.push_back(std::make_pair(current_address++, ss.str() + (op_code == "status" ? "0" : (op_code == "handler" ? "1" : "2"))));
 
-    }
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+}
+
+void Assembler::handle_sys_regw(std::string& op_code, unsigned reg){
+    memory_content.push_back(std::make_pair(current_address++, "94"));
+    std::stringstream ss;
+    ss << std::hex << reg;
+
+    memory_content.push_back(std::make_pair(current_address++, (op_code == "status" ? "0" : (op_code == "handler" ? "1" : "2"))+ ss.str()));
+
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
 }

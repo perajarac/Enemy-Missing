@@ -25,6 +25,10 @@
             GLOBAL, EXTERN, SECTION, WORD, SKIP, ASCII, ECU
         };
 
+        enum address_type {
+            INDIRECT_ADDRESSING, IND
+        };
+
         enum bind_type {LOC, GLO};
 
         struct symbol{
@@ -58,6 +62,10 @@
 
         static void handle_directive(directive directive, unsigned location_counter);
 
+        static void handle_sys_regr(std::string& op_code, unsigned reg);
+
+        static void handle_sys_regw(std::string& op_code, unsigned reg);
+
         static void add_symbol(const symbol& sym);
 
         static void add_memory_context(unsigned address, const std::string& context);
@@ -68,7 +76,7 @@
 
     private:
         //helper functions
-        static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands, unsigned& current_address);
+        static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands);
 
 
         static std::ofstream ass_output;

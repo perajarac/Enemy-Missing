@@ -105,7 +105,7 @@ unknown .
 {ld} {yylval.op_code = Assembler::instruction::LD_CODE; return (TOKEN_LD); }
 {st} {yylval.op_code = Assembler::instruction::ST_CODE; return (TOKEN_ST); }
 {csrrd} {yylval.op_code = Assembler::instruction::CSRRD_CODE; return (TOKEN_CSRRD); }
-{csrwr} {yylval.op_code = Assembler::instruction::CSRWR_CODE; return (TOKEN_CSRWR); }
+{csrwr} {yylval.op_code = Assembler::instruction::CSRWR_CODE; return TOKEN_CSRWR; }
 
 
 {lz}      { return (TOKEN_LPAR); }
@@ -133,9 +133,9 @@ unknown .
 {sp} {yylval.num = 14; return TOKEN_SP;}
 {pc} {yylval.num = 15; return TOKEN_PC;}
 
-{sstatus} {yylval.ident = strdup(yytext); return TOKEN_STATUS;}
-{handler} {yylval.ident = strdup(yytext); return TOKEN_HANDLER;}
-{cause} {yylval.ident = strdup(yytext); return TOKEN_CAUSE;}
+{sstatus} {yylval.ident = strdup(yytext+1); return TOKEN_STATUS;}
+{handler} {yylval.ident = strdup(yytext+1); return TOKEN_HANDLER;}
+{cause} {yylval.ident = strdup(yytext+1); return TOKEN_CAUSE;}
 
 %%
 
