@@ -86,7 +86,9 @@
 	%token TOKEN_STRING
 
 
+
 	%type<ident> sys_reg;
+
 
 
 
@@ -111,9 +113,15 @@
 	directive
 		: TOKEN_GLOBAL global_list
 		| TOKEN_EXTERN extern_list
-		| TOKEN_SECTION TOKEN_IDENT  {
-			//ASSEMBLER::MAKESECTION;
+		{
+
 		}
+		| TOKEN_SECTION TOKEN_IDENT  
+			{
+				if($2 == nullptr) std::cout << "error while reding ident";
+				std::string ident = $2;
+				Assembler::make_section(ident);
+			}
 		| TOKEN_WORD word_list
 		| TOKEN_SKIP TOKEN_NUM {
 			
@@ -230,6 +238,10 @@
 				std::string ident = $4;
 				Assembler::handle_sys_regw(ident, $2); 
 			}
+		/* |TOKEN_END_PARSE
+			{
+				Assembler::end_last_section();
+			} */
 
 
 		/* | TOKEN_CSRWR TOKEN_REG TOKEN_COMMA csreg
@@ -331,6 +343,8 @@ sys_reg
 	}
 
 	void yyerror(const char* s) {
+		Assembler::end_last_section();
+		Assembler::write_section_context();
 		Assembler::write_memory_content();
 		fprintf(stderr, "Parse error at line %d: %s\n", line_number, s);
 		exit(1);

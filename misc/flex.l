@@ -123,7 +123,7 @@ unknown .
 {comment} { }
 {wspace}        {  }
 {enter} {line_number++; }
-{ident} {return TOKEN_IDENT;}
+{ident} {yylval.ident = strdup(yytext); return TOKEN_IDENT;}
 
 {string} {yylval.ident = strdup(yytext); return TOKEN_STRING; }
 {digit} {yylval.num = atoi(yytext); return TOKEN_NUM; }

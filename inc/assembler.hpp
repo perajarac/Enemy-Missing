@@ -4,9 +4,10 @@
     #include <string>
     #include <vector>
     #include <sstream>
-    #include <iomanip>
     #include <iostream>
     #include <fstream>
+    #include <iomanip>
+
 
 
     //tabelea simbola, tabela sekcija, relokaciona tabela
@@ -48,15 +49,27 @@
             unsigned _base;
             unsigned _length;
 
-            section(const std::string& name, unsigned base, unsigned length)
-            : _name(name), _base(base), _length(length) {}
+            section(const std::string& name, unsigned base)
+            : _name(name), _base(base) {}
 
+            unsigned get_length() const {
+                return _length;
+            }
+
+            unsigned get_base() const {
+                return _base;
+            }
+
+            std::string get_name() const {
+                return _name;
+            }
+
+            void set_length(unsigned length){
+                _length = length;
+            }
         };
 
-        static std::vector<section> section_tables;
-        static std::vector<symbol> symbol_tables;
-        static std::vector<std::pair<unsigned, std::string>> memory_content;
-
+        static void make_section(std::string& section_name);
 
         static void handle_instruction(instruction op_code, std::vector<int> operands);
 
@@ -68,9 +81,11 @@
 
         static void add_symbol(const symbol& sym);
 
-        static void add_memory_context(unsigned address, const std::string& context);
-
         static void write_memory_content();
+
+        static void write_section_context();
+
+        static void end_last_section();
 
         //TODO: relocation tables
 
@@ -78,10 +93,17 @@
         //helper functions
         static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands);
 
-
         static std::ofstream ass_output;
 
         static unsigned current_address;
+
+        static unsigned location_counter;
+
+        static std::vector<section> section_tables;
+
+        static std::vector<symbol> symbol_tables;
+
+        static std::vector<std::pair<unsigned, std::string>> memory_content;
 
     };
 
