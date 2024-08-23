@@ -8,13 +8,13 @@ int line_number = 1;
 
 %option noyywrap
 
-global ^\.global
-extern ^\.extern
-section ^\.section
-word ^\.word
-skip ^\.skip
-ascii ^\.ascii
-end	^\.end
+global ".global"
+extern ".extern"
+section ".section"
+word ".word"
+skip ".skip"
+ascii ".ascii"
+end	".end"
 
 halt halt
 int int
@@ -47,7 +47,7 @@ comment #.*$
 wspace \s*
 string \"[a-zA-Z0-9_ ]*\"
 enter \n
-digit [0-9]
+digit [0-9]+
 hex 0[xX][0-9a-fA-F]+
 ident [a-zA-Z_][a-zA-Z0-9_]*
 
@@ -72,13 +72,13 @@ z ,
 unknown .
 
 %%
-{global} { return (TOKEN_GLOBAL); }
-{extern} { return (TOKEN_EXTERN); }
-{section} { return (TOKEN_SECTION); }
-{word} { return (TOKEN_WORD); }
-{skip} { return (TOKEN_SKIP); }
-{ascii} { return (TOKEN_ASCII); }
-{end}   { return (TOKEN_END); }
+{global} {yylval.num = Assembler::directive::GLOBAL; return (TOKEN_GLOBAL); }
+{extern} {yylval.num = Assembler::directive::EXTERN; return (TOKEN_EXTERN); }
+{section} {yylval.num = Assembler::directive::SECTION; return (TOKEN_SECTION); }
+{word} {yylval.num = Assembler::directive::WORD; return (TOKEN_WORD); }
+{skip} {yylval.num = Assembler::directive::SKIP; return (TOKEN_SKIP); }
+{ascii} {yylval.num = Assembler::directive::ASCII; return (TOKEN_ASCII); }
+{end}   {yylval.num = Assembler::directive::END; return TOKEN_END; }
 
 {halt} {yylval.op_code = Assembler::instruction::HALT_CODE; return (TOKEN_HALT); }
 {int}  {yylval.op_code = Assembler::instruction::INT_CODE; return (TOKEN_INT); }

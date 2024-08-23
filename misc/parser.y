@@ -9,6 +9,8 @@
 
 	extern int line_number;
 
+	bool ass_end = false;
+
 	void yyerror(const char* s);
 
 	class Assembler;
@@ -53,12 +55,12 @@
 	%token<op_code> TOKEN_CSRWR
 
 
-	%token TOKEN_GLOBAL
-	%token TOKEN_EXTERN
-	%token TOKEN_SECTION
-	%token TOKEN_WORD
-	%token TOKEN_SKIP
-	%token TOKEN_ASCII
+	%token<num> TOKEN_GLOBAL
+	%token<num> TOKEN_EXTERN
+	%token<num> TOKEN_SECTION
+	%token<num> TOKEN_WORD
+	%token<num> TOKEN_SKIP
+	%token<num> TOKEN_ASCII
 	%token TOKEN_END
 
 	%token<ident> TOKEN_IDENT
@@ -82,8 +84,8 @@
 	%token<ident> TOKEN_HANDLER   // Handler Register
 	%token<ident> TOKEN_CAUSE   // Cause Register
 
-	%token TOKEN_NUM
-	%token TOKEN_STRING
+	%token<num> TOKEN_NUM
+	%token<ident> TOKEN_STRING
 
 
 
@@ -113,24 +115,22 @@
 	directive
 		: TOKEN_GLOBAL global_list
 		| TOKEN_EXTERN extern_list
-		{
-
-		}
 		| TOKEN_SECTION TOKEN_IDENT  
-			{
-				if($2 == nullptr) std::cout << "error while reding ident";
-				std::string ident = $2;
-				Assembler::make_section(ident);
-			}
+		{
+			std::string ident = $2;
+			Assembler::make_section(ident);
+		}
 		| TOKEN_WORD word_list
 		| TOKEN_SKIP TOKEN_NUM {
-			
+			Assembler::handle_skip($2);
 		}
 		| TOKEN_ASCII TOKEN_STRING {
-			
+			std::string ascii = $2;
+			ascii = ascii.substr(1,ascii.size()-2);
+			Assembler::handle_ascii(ascii);
 		}
 		| TOKEN_END {
-			
+			ass_end = true;
 		}
 		| TOKEN_IDENT TOKEN_COLON  {
 			
@@ -139,19 +139,24 @@
 
 	global_list
 		: TOKEN_IDENT {
-			
+			std::string ident = $1;
+			Assembler::handle_bind_type(Assembler::bind_type::GLO, ident);
 		}
 		| global_list TOKEN_COMMA TOKEN_IDENT {
-			
+			std::string ident = $3;
+			Assembler::handle_bind_type(Assembler::bind_type::GLO, ident);
 		}
 		;
 
 	extern_list
 		: TOKEN_IDENT {
+			std::string ident = $1;	
+			Assembler::handle_bind_type(Assembler::bind_type::EXT, ident);
 			
 		}
 		| extern_list TOKEN_COMMA TOKEN_IDENT {
-			
+			std::string ident = $3;
+			Assembler::handle_bind_type(Assembler::bind_type::EXT, ident);
 		}
 		;
 
@@ -162,10 +167,11 @@
 
 	word
 		: TOKEN_IDENT {
-			
+			std::string temp = $1;
+			Assembler::handle_word(temp);
 		}
 		| TOKEN_NUM {
-			
+			Assembler::handle_word($1);
 		}
 		;
 
@@ -334,7 +340,7 @@ sys_reg
 
 		do {
 			yyparse();
-		} while(!feof(yyin));
+		} while(!feof(yyin) && !ass_end);
 
 	fclose(file);
 
@@ -345,7 +351,8 @@ sys_reg
 	void yyerror(const char* s) {
 		Assembler::end_last_section();
 		Assembler::write_section_context();
+		Assembler::write_symbol_table_context();
 		Assembler::write_memory_content();
-		fprintf(stderr, "Parse error at line %d: %s\n", line_number, s);
+		fprintf(stderr, "Parse error at line %d:\n", line_number);
 		exit(1);
 	}

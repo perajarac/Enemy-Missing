@@ -1,16 +1,19 @@
 #PROBA SVIH DIREKTIVA
+.word b
 .global a, b, c
 .extern d, e, f
 .section g
 
 #PROBA SVIH OPERACIJA
 halt
+
 int
 add %pc, %r3
 sub %r1, %r3
 mul %r1, %r3
 div %r4, %r8
 .section a
+.word m
 not %r1
 and %r1, %r3
 or %r1, %r3
@@ -23,8 +26,11 @@ csrrd %status, %r4
 csrrd %handler, %r11
 csrrd %cause, %r3
 csrwr %r3, %status
+.word f
 csrwr %r11, %handler
 csrwr %r3, %cause
+.skip 10
+.ascii "gagi"
 ; iret
 ; call 0x1
 ; call 1
@@ -63,3 +69,21 @@ csrwr %r3, %cause
 ; csrrd %handler, %r4
 ; csrwr %r4, %status
 ; .end
+
+
+
+; 00 00 00 00
+
+
+; a def 20205  bp 
+; bp
+
+
+
+; .section g
+; .word a
+; jmp a
+
+
+
+; a:
