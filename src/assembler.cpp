@@ -4,7 +4,12 @@
 std::vector<Assembler::section> Assembler::section_tables;
 std::vector<Assembler::symbol> Assembler::sym_table;
 std::vector<std::pair<unsigned, std::string>> Assembler::memory_content;
-std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::flink_table;
+
+std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::flink_table_symbols;
+std::unordered_map<unsigned, int> Assembler::literal_flink;
+
+Assembler::literal_pool Assembler::lit_pool;
+std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::relocation_table;
 
 std::ofstream  Assembler::ass_output;
 unsigned Assembler::current_address = 0;
@@ -124,6 +129,7 @@ void Assembler::arithmetic_operation(const std::string& arithmetic_code, const s
 }
 
 void Assembler::end_last_section(){
+    //TODO make place for literal pool at the end of the section
     section_tables.back().set_length(current_address - section_tables.back().get_base());
 }
 
@@ -167,7 +173,6 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
         case bind_type::EXT:{
             if(!sym_exist(sym_name)){
             symbol new_sym(sym_table.size(),-1,bind_type::EXT, section_tables.size() ? section_tables.back().get_name(): "UND", sym_name);
-            //TODO: ADD TO RELOC TABLE
             add_symbol(new_sym);
             }else{
                 for(auto& sym:sym_table){
@@ -176,12 +181,12 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
                     }
                 }
             }
+            relocation_table[sym_name].push_back({current_address});
             break;
         }
         case bind_type::GLO:{
             if(!sym_exist(sym_name)){
                 symbol new_sym(sym_table.size(),-1,bind_type::GLO, section_tables.size() ? section_tables.back().get_name(): "UND", sym_name);
-                //TODO: ADD TO RELOC TABLE
                 add_symbol(new_sym);
             }else{
                 for(auto& sym:sym_table){
@@ -190,6 +195,7 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
                     }
                 }
             }
+            relocation_table[sym_name].push_back({current_address});
             break;
         }default:
             break;
@@ -203,7 +209,7 @@ void Assembler::handle_word(const std::string& sym_name){
         add_symbol(new_sym);
     }
 
-    flink_table[sym_name].push_back({current_address});
+    flink_table_symbols[sym_name].push_back({current_address});
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -229,6 +235,67 @@ void Assembler::handle_ascii(std::string& ascii){
         memory_content.push_back(std::make_pair(current_address++, ss.str()));
     }
 }
+
+
+
+void Assembler::mem_imm_literal(int literal, int reg){
+    if(literal < 4096 && literal >= 0){
+        memory_content.push_back(std::make_pair(current_address++, "91")); //load imm
+        std::stringstream ss;
+        ss << std::hex << reg << 0;
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        int temp = 0b111100000000;
+        int upper = literal & temp;
+        literal = literal & (~temp);
+        std::stringstream sss;
+        sss << std::hex << 0 << upper <<  literal;
+        std::cout << sss.str();
+        memory_content.push_back(std::make_pair(current_address++, sss.str().substr(0,2)));
+        memory_content.push_back(std::make_pair(current_address++, sss.str().substr(4,2)));
+    }else{
+        memory_content.push_back(std::make_pair(current_address++, "92"));
+        std::stringstream ss;
+        ss << std::hex << reg << 15;
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+    }
+}
+
+
+void Assembler::resolve_literal_flink(){
+
+    for (const auto& [memory_address, index] : literal_flink) {
+        auto it = std::find_if(
+            memory_content.begin(), 
+            memory_content.end(), 
+            [memory_address](const std::pair<unsigned, std::string>& element) {
+                return element.first == memory_address;
+            }
+        );
+
+        if (it != memory_content.end()) {
+            unsigned pomeraj = lit_pool.get_base() + index * 4 - memory_address + 2;
+
+            std::cout << std::hex << pomeraj;
+            unsigned low_byte = pomeraj & 0xFF;         
+            unsigned high_nibble = (pomeraj >> 8) & 0xF;
+
+            std::stringstream ss;
+            ss << std::hex << (high_nibble);
+            it->second[1] = ss.str()[0];
+
+            ++it;
+            if (it != memory_content.end()) {
+                std::stringstream ss_low;
+                ss_low << std::setw(2) << std::setfill('0') << std::hex << low_byte;
+                it->second = ss_low.str();
+            }
+        }
+    }
+}
+
 
 
 //------------------------------------ Helper functions ---------------------------------------
@@ -358,4 +425,12 @@ void Assembler::write_symbol_table_context() {
 
     ass_output << "---------------------------------------------\n";
     ass_output.close();
+}
+
+
+void Assembler::add_literal_pool_to_memory(){
+    lit_pool.set_base(current_address);
+    for(auto i:lit_pool.literals){
+        handle_word(i);
+    }
 }

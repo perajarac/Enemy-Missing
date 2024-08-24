@@ -26,64 +26,9 @@ csrrd %status, %r4
 csrrd %handler, %r11
 csrrd %cause, %r3
 csrwr %r3, %status
+ld 0xabcdda, %r5
+.skip 10
+ld 0xabcdda, %r5
 .word f
 csrwr %r11, %handler
 csrwr %r3, %cause
-.skip 10
-.ascii "gagi"
-; iret
-; call 0x1
-; call 1
-; call symbol
-; ret
-; jmp 0x1
-; jmp 1
-; jmp symbol
-; beq %r1, %sp, 0x1
-; beq %r1, %sp, 1
-; beq %r1, %sp, symbol
-; bne %r1, %sp, 0x1
-; bne %r1, %sp, 1
-; bne %r1, %sp, symbol
-; bgt %r1, %sp, 0x1
-; bgt %r1, %sp, 1
-; bgt %r1, %sp, symbol
-; push %pc
-; pop %r12
-; ld $1, %r9
-; ld $0x1, %r9
-; ld $symbol, %r9
-; ld 1, %r9
-; ld 0x1, %r9
-; ld symbol, %r9
-; ld %r2, %r9
-; ld [%r1], %r9
-; ld [%r1 + 1], %r9
-; ld [%r1 + 0x1], %r9
-; st %r10, %r2
-; st %r10, [%r1]
-; st %r10, [%r1 + 1]
-; st %r10, [%r1 + 0x1]
-; csrrd %handler, %r4
-; csrwr %r4, %status
-; csrrd %handler, %r4
-; csrwr %r4, %status
-; .end
-
-
-
-; 00 00 00 00
-
-
-; a def 20205  bp 
-; bp
-
-
-
-; .section g
-; .word a
-; jmp a
-
-
-
-; a:

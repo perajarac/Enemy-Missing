@@ -9,6 +9,7 @@
     #include <iomanip>
     #include <memory>
     #include <unordered_map>
+    #include <algorithm>
 
 
 
@@ -74,7 +75,32 @@
 
         struct flink{
             unsigned address;
+            bool add = false;
             flink(unsigned adr): address(adr) {}
+        };
+
+        struct literal_pool{
+            unsigned _base;
+            std::vector<int> literals;
+
+            int return_index_of_literal(int literal){
+                if(std::find(literals.begin(), literals.end(), literal) != literals.end()){
+                    auto it = std::find(literals.begin(), literals.end(), literal);
+                    return std::distance(literals.begin(), it);
+                }else{
+                    literals.push_back(literal);
+                    return literals.size()-1;
+                }
+            }
+
+            void set_base(unsigned base){
+                _base = base;
+            }
+
+            unsigned get_base(){
+                return _base;
+            }
+
         };
         
         static void make_section(std::string& section_name);
@@ -93,13 +119,20 @@
 
         static void write_symbol_table_context();
 
+        static void add_literal_pool_to_memory();
+
         static void end_last_section();
+
+        static void resolve_literal_flink();
 
         static void handle_skip(unsigned bytes);
         static void handle_word(const std::string& sym_name);
         static void handle_word(unsigned literal);
         static void handle_bind_type(bind_type bt, std::string sym_name);
         static void handle_ascii(std::string& ascii);
+
+
+        static void mem_imm_literal(int literal, int reg);
 
 
         //TODO: relocation tables
@@ -122,7 +155,12 @@
 
         static std::vector<std::pair<unsigned, std::string>> memory_content;
 
-        static std::unordered_map<std::string, std::vector<flink>> flink_table;
+        static std::unordered_map<std::string, std::vector<flink>> flink_table_symbols;
+
+        static std::unordered_map<std::string, std::vector<flink>> relocation_table;
+
+        static literal_pool lit_pool;
+        static std::unordered_map<unsigned, int> literal_flink; //map memory_address->index in literal pool
 
     };
 

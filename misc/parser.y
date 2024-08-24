@@ -95,7 +95,6 @@
 
 
 
-
 	%%
 	prog
 		: statements
@@ -244,14 +243,12 @@
 				std::string ident = $4;
 				Assembler::handle_sys_regw(ident, $2); 
 			}
-		/* |TOKEN_END_PARSE
-			{
-				Assembler::end_last_section();
-			} */
 
-
-		/* | TOKEN_CSRWR TOKEN_REG TOKEN_COMMA csreg
-			{ if (!ended) mk_csrwr($2, $4); }  */
+		| TOKEN_LD TOKEN_NUM TOKEN_COMMA TOKEN_REG
+			{ 
+				Assembler::mem_imm_literal($2, $4);
+			}
+		
 
 
 
@@ -286,11 +283,7 @@
 			{ if (!ended) mk_op(0x40, 0, $2, $4); }
 		; */
 
-	/* op
-		: TOKEN_NUM {
-			$$ = operand(MEM_LIT, $1, 0, 0);
-		}
-		| TOKEN_IDENT {
+		/* | TOKEN_IDENT {
 			$$ = operand(MEM_SYM, 0, $1, 0);
 		}
 		| TOKEN_DOLLAR TOKEN_NUM{
@@ -311,7 +304,7 @@
 		| TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_IDENT TOKEN_RBRACKET {
 			$$ = operand(MEM_REG_SYM, 0, $4, $2);
 		}
-		; */
+		;  */
 
 	/* spec_operand
 		: TOKEN_NUM {
@@ -342,6 +335,13 @@ sys_reg
 			yyparse();
 		} while(!feof(yyin) && !ass_end);
 
+	Assembler::end_last_section();
+	Assembler::add_literal_pool_to_memory();
+	Assembler::resolve_literal_flink();
+	Assembler::write_section_context();
+	Assembler::write_symbol_table_context();
+	Assembler::write_memory_content();
+
 	fclose(file);
 
 
@@ -349,10 +349,6 @@ sys_reg
 	}
 
 	void yyerror(const char* s) {
-		Assembler::end_last_section();
-		Assembler::write_section_context();
-		Assembler::write_symbol_table_context();
-		Assembler::write_memory_content();
 		fprintf(stderr, "Parse error at line %d:\n", line_number);
 		exit(1);
 	}
