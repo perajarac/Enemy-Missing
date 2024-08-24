@@ -133,6 +133,8 @@
 
 
         static void mem_imm_literal(int literal, int reg);
+        static void mem_dir_literal(int literal, int reg);
+        static void mem_dir_offset_literal(int reg1, int literal, int reg2);
 
 
         //TODO: relocation tables

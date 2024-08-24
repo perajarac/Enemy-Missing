@@ -129,7 +129,13 @@ void Assembler::arithmetic_operation(const std::string& arithmetic_code, const s
 }
 
 void Assembler::end_last_section(){
-    //TODO make place for literal pool at the end of the section
+    if(lit_pool.literals.size()>0){
+        add_literal_pool_to_memory();
+        resolve_literal_flink();
+    }
+    literal_flink.clear();
+    lit_pool.literals.clear();
+    lit_pool.set_base(0);
     section_tables.back().set_length(current_address - section_tables.back().get_base());
 }
 
@@ -236,8 +242,6 @@ void Assembler::handle_ascii(std::string& ascii){
     }
 }
 
-
-
 void Assembler::mem_imm_literal(int literal, int reg){
     if(literal < 4096 && literal >= 0){
         memory_content.push_back(std::make_pair(current_address++, "91")); //load imm
@@ -247,11 +251,15 @@ void Assembler::mem_imm_literal(int literal, int reg){
         int temp = 0b111100000000;
         int upper = literal & temp;
         literal = literal & (~temp);
+        upper = upper >> 8;
         std::stringstream sss;
-        sss << std::hex << 0 << upper <<  literal;
-        std::cout << sss.str();
-        memory_content.push_back(std::make_pair(current_address++, sss.str().substr(0,2)));
-        memory_content.push_back(std::make_pair(current_address++, sss.str().substr(4,2)));
+        sss << std::hex << std::setw(2) << std::setfill('0') << upper  
+            << std::setw(2) << std::setfill('0') << literal;           
+        std::string first_part = sss.str().substr(0, 2); 
+        std::string second_part = sss.str().substr(2, 2); 
+
+        memory_content.push_back(std::make_pair(current_address++, first_part));
+        memory_content.push_back(std::make_pair(current_address++, second_part));
     }else{
         memory_content.push_back(std::make_pair(current_address++, "92"));
         std::stringstream ss;
@@ -263,9 +271,69 @@ void Assembler::mem_imm_literal(int literal, int reg){
     }
 }
 
+void Assembler::mem_dir_literal(int literal, int reg){
+    if(literal < 4096 && literal >= 0){
+        memory_content.push_back(std::make_pair(current_address++, "92")); //load imm
+        std::stringstream ss;
+        ss << std::hex << reg << 0;
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        int temp = 0b111100000000;
+        int upper = literal & temp;
+        literal = literal & (~temp);
+        upper = upper >> 8;
+        std::stringstream sss;
+        sss << std::hex << std::setw(2) << std::setfill('0') << upper  
+            << std::setw(2) << std::setfill('0') << literal;           
+        std::string first_part = sss.str().substr(0, 2); 
+        std::string second_part = sss.str().substr(2, 2); 
+
+        memory_content.push_back(std::make_pair(current_address++, first_part));
+        memory_content.push_back(std::make_pair(current_address++, second_part));
+    }else{
+        // ld 0x1234, r4
+        // r4 <= mem[pc + offset] --> op code 92
+        memory_content.push_back(std::make_pair(current_address++, "92"));
+        std::stringstream ss;
+        ss << std::hex << reg << 15;
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        // r4 <= mem[r4]  --> op code 93
+        memory_content.push_back(std::make_pair(current_address++, "92"));
+        std::stringstream sss;
+        sss << std::hex << reg << reg;
+        memory_content.push_back(std::make_pair(current_address++, sss.str().substr(0,2)));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+    }
+}
+
+void Assembler::mem_dir_offset_literal(int reg1, int literal, int reg2){
+    if(literal < 4096 && literal >= 0){
+        memory_content.push_back(std::make_pair(current_address++, "92")); //load imm
+        std::stringstream ss;
+        ss << std::hex << reg2 << reg1;
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        int temp = 0b111100000000;
+        int upper = literal & temp;
+        literal = literal & (~temp);
+        upper = upper >> 8;
+        std::stringstream sss;
+        sss << std::hex << std::setw(2) << std::setfill('0') << upper  
+            << std::setw(2) << std::setfill('0') << literal;           
+        std::string first_part = sss.str().substr(0, 2); 
+        std::string second_part = sss.str().substr(2, 2); 
+
+        memory_content.push_back(std::make_pair(current_address++, first_part));
+        memory_content.push_back(std::make_pair(current_address++, second_part));
+    }else{
+        std::cout << "\nLiteral can't be written on 12 bits, error in assembling proccess!\n";
+    }
+}
+
 
 void Assembler::resolve_literal_flink(){
-
     for (const auto& [memory_address, index] : literal_flink) {
         auto it = std::find_if(
             memory_content.begin(), 
@@ -278,7 +346,6 @@ void Assembler::resolve_literal_flink(){
         if (it != memory_content.end()) {
             unsigned pomeraj = lit_pool.get_base() + index * 4 - memory_address + 2;
 
-            std::cout << std::hex << pomeraj;
             unsigned low_byte = pomeraj & 0xFF;         
             unsigned high_nibble = (pomeraj >> 8) & 0xF;
 

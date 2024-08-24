@@ -26,9 +26,10 @@ csrrd %status, %r4
 csrrd %handler, %r11
 csrrd %cause, %r3
 csrwr %r3, %status
-ld 0xabcdda, %r5
+ld [%r1 + 0xa], %r4
+.section g
 .skip 10
-ld 0xabcdda, %r5
+ld 0xabc, %r5
 .word f
 csrwr %r11, %handler
 csrwr %r3, %cause

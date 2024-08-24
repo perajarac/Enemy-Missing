@@ -244,9 +244,17 @@
 				Assembler::handle_sys_regw(ident, $2); 
 			}
 
-		| TOKEN_LD TOKEN_NUM TOKEN_COMMA TOKEN_REG
+		| TOKEN_LD TOKEN_DOLLAR TOKEN_NUM TOKEN_COMMA TOKEN_REG
 			{ 
-				Assembler::mem_imm_literal($2, $4);
+				Assembler::mem_imm_literal($3, $5);
+			}
+		| TOKEN_LD TOKEN_NUM TOKEN_COMMA TOKEN_REG
+			{
+				Assembler::mem_dir_literal($2, $4);
+			}
+		| TOKEN_LD TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_NUM TOKEN_RBRACKET TOKEN_COMMA TOKEN_REG
+			{
+				Assembler::mem_dir_offset_literal($3,$5,$8);
 			}
 		
 
@@ -336,8 +344,6 @@ sys_reg
 		} while(!feof(yyin) && !ass_end);
 
 	Assembler::end_last_section();
-	Assembler::add_literal_pool_to_memory();
-	Assembler::resolve_literal_flink();
 	Assembler::write_section_context();
 	Assembler::write_symbol_table_context();
 	Assembler::write_memory_content();
