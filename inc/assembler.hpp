@@ -136,6 +136,9 @@
         static void mem_dir_literal(int literal, int reg);
         static void mem_dir_offset_literal(int reg1, int literal, int reg2);
 
+        static void mem_dir_register(int opr_reg, int reg);
+        static void mem_ind_register(int opr_reg, int reg);
+
 
         //TODO: relocation tables
 
@@ -144,6 +147,10 @@
         static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands);
 
         static bool sym_exist(const std::string& sym_name);
+
+        static void wliteralim(int literal);
+        static void wregim(int opr_reg, int reg);
+        static void putlitip(int literal, int reg);
 
         static std::ofstream ass_output;
 

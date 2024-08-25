@@ -256,6 +256,29 @@
 			{
 				Assembler::mem_dir_offset_literal($3,$5,$8);
 			}
+		| TOKEN_LD TOKEN_REG TOKEN_COMMA TOKEN_REG
+			{
+				Assembler::mem_dir_register($2, $4);
+			}
+		| TOKEN_LD TOKEN_LBRACKET TOKEN_REG TOKEN_RBRACKET TOKEN_COMMA TOKEN_REG
+			{
+				Assembler::mem_ind_register($3,$6);
+			}
+
+			/* TODO: ADD LOAD WITH SIMBOLS */
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_DOLLAR TOKEN_NUM
+			{
+				std::cout << "Unvalid instruction: store can not be executed with immediate operand\n";
+			}
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_DOLLAR TOKEN_IDENT
+			{
+				std::cout << "Unvalid instruction: store can not be executed with immediate operand\n";
+			}
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_NUM
+			{
+				/*TODO:: finish store*/
+				//Assembler::st_mem_dir_literal()
+			}
 		
 
 
