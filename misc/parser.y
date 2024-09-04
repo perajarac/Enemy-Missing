@@ -275,9 +275,12 @@
 				std::cout << "Unvalid instruction: store can not be executed with immediate operand\n";
 			}
 		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_NUM
-			{
-				/*TODO:: finish store*/
-				//Assembler::st_mem_dir_literal()
+			{	
+				Assembler::st_mem_dir_literal($2,$4);
+			}
+		| TOKEN_ST TOKEN_LBRACKET TOKEN_REG TOKEN_RBRACKET TOKEN_COMMA TOKEN_REG
+			{	
+				Assembler::st_mem_dir_reg($3,$6);
 			}
 		
 

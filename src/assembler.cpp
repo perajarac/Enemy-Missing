@@ -6,7 +6,7 @@ std::vector<Assembler::symbol> Assembler::sym_table;
 std::vector<std::pair<unsigned, std::string>> Assembler::memory_content;
 
 std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::flink_table_symbols;
-std::unordered_map<unsigned, int> Assembler::literal_flink;
+std::map<unsigned, int> Assembler::literal_flink;
 
 Assembler::literal_pool Assembler::lit_pool;
 std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::relocation_table;
@@ -304,10 +304,66 @@ void Assembler::mem_ind_register(int opr_reg, int reg){
 //------------------------------STORE INSTRUCTION----------------------------------------- st %gpr, operand --> operand <= gpr
 //-----------------------------literal as operand-----------------------------------------
 
+void Assembler::st_mem_dir_literal(int reg, int literal){
+    if(literal < 4096 && literal >= 0){ 
+        memory_content.push_back(std::make_pair(current_address++, "80"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        int temp = 0b111100000000;
+        int upper = literal & temp;
+        literal = literal & (~temp);
+        upper = upper >> 8;
+        std::stringstream sss;
+        sss << std::hex  << reg  << upper  
+            << std::setw(2) << std::setfill('0') << literal;           
+        std::string first_part = sss.str().substr(0, 2); 
+        std::string second_part = sss.str().substr(2, 2); 
+
+        memory_content.push_back(std::make_pair(current_address++, first_part));
+        memory_content.push_back(std::make_pair(current_address++, second_part));
+    }else{
+        memory_content.push_back(std::make_pair(current_address++, "82"));
+        memory_content.push_back(std::make_pair(current_address++, "0f"));
+        literal = (literal << 8) | reg;
+        literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+    }
+}
+
+void Assembler::st_mem_dir_reg(int reg1, int reg2){
+    memory_content.push_back(std::make_pair(current_address++, "82"));
+    std::stringstream ss;
+    ss << std::hex << std::setw(2) << std::setfill('0') << reg2; 
+    
+    std::string temp = ss.str().substr(0, 2);
+    memory_content.push_back(std::make_pair(current_address++, temp));
+
+    std::stringstream sss;
+    sss << std::hex << std::setw(2) << std::setfill('0'); //TODO DODAJ REG1           
+    std::string first_part = sss.str().substr(0, 2);
+
+    memory_content.push_back(std::make_pair(current_address++, first_part));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+}
+
+
+void Assembler::st_mem_dir_offset_literal(int reg1, int literal, int reg2){
+    if(literal < 4096 && literal >= 0){
+        memory_content.push_back(std::make_pair(current_address++, "92")); //load imm
+        std::stringstream ss;
+        ss << std::hex << reg2 << reg1;
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        wliteralim(literal);
+    }else{
+        std::cout << "\nLiteral can't be written on 12 bits, error in assembling proccess!\n";
+    }
+}
+
 //-----------------------------symbol as operand-----------------------------------------
 
 void Assembler::resolve_literal_flink(){
-    for (const auto& [memory_address, index] : literal_flink) {
+    std::unordered_map<int,int> processed;
+    for (const auto& [memory_address, inde] : literal_flink) {
         auto it = std::find_if(
             memory_content.begin(), 
             memory_content.end(), 
@@ -317,14 +373,39 @@ void Assembler::resolve_literal_flink(){
         );
 
         if (it != memory_content.end()) {
+            int index = inde;
+            int temp  = (lit_pool.literals[index] & 0xf);
+            int key = lit_pool.literals[index] >> 8;
+
+            // Use std::find_if to check if the key is in the processed map
+            auto processed_it = std::find_if(
+                processed.begin(), 
+                processed.end(), 
+                [key](const std::pair<const int, int>& element) {
+                    return element.first == key;
+                }
+            );
+            if (processed_it == processed.end()) {
+                processed[key] = index;
+            } else {
+                index = processed_it->second;
+            }
             unsigned pomeraj = lit_pool.get_base() + index * 4 - memory_address + 2;
 
+            //for store and jumps not just literals are on lower 2 bytes so i added gpr[c] in literal temp vector and i undo it here
+            if(temp!=0) lit_pool.literals[index] = lit_pool.literals[index] >> 8;
+
+
             unsigned low_byte = pomeraj & 0xFF;         
-            unsigned high_nibble = (pomeraj >> 8) & 0xF;
+            unsigned high_nibble = ((pomeraj) & 0xF00) >> 8;
 
             std::stringstream ss;
+            std::stringstream sss;
+
+            sss << std::hex << temp;
             ss << std::hex << (high_nibble);
             it->second[1] = ss.str()[0];
+            it->second[0] = sss.str()[0];
 
             ++it;
             if (it != memory_content.end()) {
@@ -470,11 +551,17 @@ void Assembler::write_symbol_table_context() {
 
 void Assembler::add_literal_pool_to_memory(){
     lit_pool.set_base(current_address);
-    for(auto i:lit_pool.literals){
-        handle_word(i);
+    std::unordered_set<decltype(lit_pool.literals)::value_type> processed;
+
+    for (const auto& i : lit_pool.literals) {
+        if (processed.insert(i>>8).second) {
+            // If insertion was successful, the item is being handled for the first time
+            handle_word(i>>8);
+        }
     }
 }
 
+//used in load to put literal value in lower 2 bytes
 void Assembler::wliteralim(int literal){
     int temp = 0b111100000000;
     int upper = literal & temp;
@@ -490,6 +577,7 @@ void Assembler::wliteralim(int literal){
     memory_content.push_back(std::make_pair(current_address++, second_part));
 }
 
+//used in load functions to fill 2nd byte of instruction
 void Assembler::wregim(int opr_reg, int reg){
     std::stringstream ss;
     ss << std::hex << reg << opr_reg;
@@ -503,7 +591,23 @@ void Assembler::putlitip(int literal, int reg){
     std::stringstream ss;
     ss << std::hex << reg << 15;
     memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-    literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
+    literal_flink[current_address] = lit_pool.return_index_of_literal(literal << 8);
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
+}
+
+//temp funtion used in store functions. fills lower 2 bytes of instruction with registar value that is being stored and literal address
+void Assembler::wlitims(int literal, int reg){
+    int temp = 0b111100000000;
+    int upper = literal & temp;
+    literal = literal & (~temp);
+    upper = upper >> 8;
+    std::stringstream sss;
+    sss << std::hex  << reg  << upper  
+        << std::setw(2) << std::setfill('0') << literal;           
+    std::string first_part = sss.str().substr(0, 2); 
+    std::string second_part = sss.str().substr(2, 2); 
+
+    memory_content.push_back(std::make_pair(current_address++, first_part));
+    memory_content.push_back(std::make_pair(current_address++, second_part));
 }

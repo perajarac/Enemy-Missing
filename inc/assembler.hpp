@@ -10,6 +10,8 @@
     #include <memory>
     #include <unordered_map>
     #include <algorithm>
+    #include <unordered_set>
+    #include <map>
 
 
 
@@ -84,7 +86,7 @@
             std::vector<int> literals;
 
             int return_index_of_literal(int literal){
-                if(std::find(literals.begin(), literals.end(), literal) != literals.end()){
+                if(std::find(literals.begin(), literals.end(), literal>>8) != literals.end()){
                     auto it = std::find(literals.begin(), literals.end(), literal);
                     return std::distance(literals.begin(), it);
                 }else{
@@ -92,7 +94,7 @@
                     return literals.size()-1;
                 }
             }
-
+            
             void set_base(unsigned base){
                 _base = base;
             }
@@ -139,6 +141,10 @@
         static void mem_dir_register(int opr_reg, int reg);
         static void mem_ind_register(int opr_reg, int reg);
 
+        static void st_mem_dir_literal(int reg, int address);
+        static void st_mem_dir_offset_literal(int reg1, int literal, int reg2);
+        static void st_mem_dir_reg(int reg1, int reg2);
+
 
         //TODO: relocation tables
 
@@ -151,6 +157,7 @@
         static void wliteralim(int literal);
         static void wregim(int opr_reg, int reg);
         static void putlitip(int literal, int reg);
+        static void wlitims(int literal, int reg);
 
         static std::ofstream ass_output;
 
@@ -169,7 +176,7 @@
         static std::unordered_map<std::string, std::vector<flink>> relocation_table;
 
         static literal_pool lit_pool;
-        static std::unordered_map<unsigned, int> literal_flink; //map memory_address->index in literal pool
+        static std::map<unsigned, int> literal_flink; //map memory_address->index in literal pool
 
     };
 
