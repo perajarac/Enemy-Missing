@@ -11,4 +11,4 @@ halt
 .section a
 ld 0xabcd, %r5
 st %r2, 0xabc
-st [%r3], %r4
+st %r4,[%r3]

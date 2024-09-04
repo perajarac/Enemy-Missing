@@ -278,9 +278,13 @@
 			{	
 				Assembler::st_mem_dir_literal($2,$4);
 			}
-		| TOKEN_ST TOKEN_LBRACKET TOKEN_REG TOKEN_RBRACKET TOKEN_COMMA TOKEN_REG
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_LBRACKET TOKEN_REG TOKEN_RBRACKET 
 			{	
-				Assembler::st_mem_dir_reg($3,$6);
+				Assembler::st_mem_dir_reg($5,$2);
+			}
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_NUM TOKEN_RBRACKET 
+			{	
+				Assembler::st_mem_dir_offset_literal($5,$7,$2);
 			}
 		
 

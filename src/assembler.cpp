@@ -333,14 +333,14 @@ void Assembler::st_mem_dir_literal(int reg, int literal){
 void Assembler::st_mem_dir_reg(int reg1, int reg2){
     memory_content.push_back(std::make_pair(current_address++, "82"));
     std::stringstream ss;
-    ss << std::hex << std::setw(2) << std::setfill('0') << reg2; 
+    ss << std::hex << std::setw(2) << std::setfill('0') << reg1; 
     
     std::string temp = ss.str().substr(0, 2);
     memory_content.push_back(std::make_pair(current_address++, temp));
 
-    std::stringstream sss;
-    sss << std::hex << std::setw(2) << std::setfill('0'); //TODO DODAJ REG1           
-    std::string first_part = sss.str().substr(0, 2);
+    std::string first_part = "00";
+    first_part[0] = std::to_string(reg2)[0];
+    std::cout << first_part;
 
     memory_content.push_back(std::make_pair(current_address++, first_part));
     memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -349,11 +349,25 @@ void Assembler::st_mem_dir_reg(int reg1, int reg2){
 
 void Assembler::st_mem_dir_offset_literal(int reg1, int literal, int reg2){
     if(literal < 4096 && literal >= 0){
-        memory_content.push_back(std::make_pair(current_address++, "92")); //load imm
+        memory_content.push_back(std::make_pair(current_address++, "82"));
         std::stringstream ss;
-        ss << std::hex << reg2 << reg1;
-        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-        wliteralim(literal);
+        ss << std::hex << std::setw(2) << std::setfill('0') << reg1; 
+        
+        std::string temp = ss.str().substr(0, 2);
+        memory_content.push_back(std::make_pair(current_address++, temp));
+
+        std::string first_part = "00";
+        first_part[0] = std::to_string(reg2)[0];
+        ss.str("");
+        ss.clear();
+        ss << std::hex << std::setw(2) << std::setfill('0') << ((literal&0xf00)>>8); 
+        first_part[1] = ss.str()[1];
+
+        std::stringstream sss;
+        sss << std::hex << std::setw(2) << std::setfill('0') << (literal & 0xff);
+
+        memory_content.push_back(std::make_pair(current_address++, first_part));
+        memory_content.push_back(std::make_pair(current_address++, sss.str()));
     }else{
         std::cout << "\nLiteral can't be written on 12 bits, error in assembling proccess!\n";
     }
