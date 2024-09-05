@@ -9,8 +9,6 @@
 
 	extern int line_number;
 
-	bool ass_end = false;
-
 	void yyerror(const char* s);
 
 	class Assembler;
@@ -129,10 +127,11 @@
 			Assembler::handle_ascii(ascii);
 		}
 		| TOKEN_END {
-			ass_end = true;
+			//TODO
 		}
 		| TOKEN_IDENT TOKEN_COLON  {
-			
+			std::string ident = $1;
+			Assembler::handle_label(ident);
 		}
 		;
 
@@ -264,15 +263,27 @@
 			{
 				Assembler::mem_ind_register($3,$6);
 			}
+		| TOKEN_LD TOKEN_DOLLAR TOKEN_IDENT TOKEN_COMMA TOKEN_REG
+			{ 
+				std::string ident = $3;
+				Assembler::mem_imm_symbol(ident, $5);
+			}
+		| TOKEN_LD TOKEN_IDENT TOKEN_COMMA TOKEN_REG
+			{
+				std::string ident = $2;
+				Assembler::mem_dir_symbol(ident,$4);
+			}
 
 			/* TODO: ADD LOAD WITH SIMBOLS */
 		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_DOLLAR TOKEN_NUM
 			{
-				std::cout << "Unvalid instruction: store can not be executed with immediate operand\n";
+				std::cout << "Error! Unvalid instruction: store can not be executed with immediate operand\n";
+				Assembler::ass_end = true;
 			}
 		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_DOLLAR TOKEN_IDENT
 			{
-				std::cout << "Unvalid instruction: store can not be executed with immediate operand\n";
+				std::cout << "Error! Unvalid instruction: store can not be executed with immediate operand\n";
+				Assembler::ass_end = true;
 			}
 		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_NUM
 			{	
@@ -371,12 +382,15 @@ sys_reg
 
 		do {
 			yyparse();
-		} while(!feof(yyin) && !ass_end);
+		} while(!feof(yyin));
 
-	Assembler::end_last_section();
-	Assembler::write_section_context();
-	Assembler::write_symbol_table_context();
-	Assembler::write_memory_content();
+
+	if(Assembler::ass_end == false){
+		Assembler::end_last_section();
+		Assembler::write_section_context();
+		Assembler::write_symbol_table_context();
+		Assembler::write_memory_content();
+	}
 
 	fclose(file);
 

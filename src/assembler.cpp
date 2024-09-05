@@ -1,6 +1,8 @@
 #include "../inc/assembler.hpp"
 
 
+bool Assembler::ass_end = false;
+
 std::vector<Assembler::section> Assembler::section_tables;
 std::vector<Assembler::symbol> Assembler::sym_table;
 std::vector<std::pair<unsigned, std::string>> Assembler::memory_content;
@@ -9,7 +11,8 @@ std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::flink_
 std::map<unsigned, int> Assembler::literal_flink;
 
 Assembler::literal_pool Assembler::lit_pool;
-std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::relocation_table;
+
+std::unordered_map<std::string, std::vector<int>> Assembler::relocation_table;
 
 std::ofstream  Assembler::ass_output;
 unsigned Assembler::current_address = 0;
@@ -187,7 +190,7 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
                     }
                 }
             }
-            relocation_table[sym_name].push_back({current_address});
+            relocation_table[sym_name].push_back(current_address);
             break;
         }
         case bind_type::GLO:{
@@ -201,7 +204,7 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
                     }
                 }
             }
-            relocation_table[sym_name].push_back({current_address});
+            relocation_table[sym_name].push_back(current_address);
             break;
         }default:
             break;
@@ -289,6 +292,7 @@ void Assembler::mem_dir_offset_literal(int reg1, int literal, int reg2){
         wliteralim(literal);
     }else{
         std::cout << "\nLiteral can't be written on 12 bits, error in assembling proccess!\n";
+        ass_end = true;
     }
 }
 //-----------------------------register as operand-----------------------------------------
@@ -340,7 +344,6 @@ void Assembler::st_mem_dir_reg(int reg1, int reg2){
 
     std::string first_part = "00";
     first_part[0] = std::to_string(reg2)[0];
-    std::cout << first_part;
 
     memory_content.push_back(std::make_pair(current_address++, first_part));
     memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -370,10 +373,60 @@ void Assembler::st_mem_dir_offset_literal(int reg1, int literal, int reg2){
         memory_content.push_back(std::make_pair(current_address++, sss.str()));
     }else{
         std::cout << "\nLiteral can't be written on 12 bits, error in assembling proccess!\n";
+        ass_end = true;
     }
 }
 
 //-----------------------------symbol as operand-----------------------------------------
+
+
+void Assembler::handle_label(std::string ident){
+    if(!section_tables.size()){
+        std::cout << "Error in assembling proces, labels can't be written outside sections\n";
+        ass_end = true;
+        return;
+    }
+    int index = -1;
+    for(int i = 0;i<sym_table.size();i++){
+        if(ident == sym_table[i].get_name()){
+            index = i;
+        }
+    }
+
+    if(index!=-1 && sym_table[index].get_section_name() == "UND"){
+        sym_table[index].set_section_name(section_tables.back().get_name());
+    }else if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
+        add_symbol(new_sym);
+    }else{
+        std::cout << "Error, label can't be defined twice\n";
+        ass_end = true;
+    }
+}
+
+
+void Assembler::mem_imm_symbol(std::string ident, int reg){}
+void Assembler::mem_dir_symbol(std::string ident, int reg){}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void Assembler::resolve_literal_flink(){
     std::unordered_map<int,int> processed;

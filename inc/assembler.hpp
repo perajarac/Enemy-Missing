@@ -77,7 +77,7 @@
 
         struct flink{
             unsigned address;
-            bool add = false;
+                bool add = false;
             flink(unsigned adr): address(adr) {}
         };
 
@@ -145,6 +145,13 @@
         static void st_mem_dir_offset_literal(int reg1, int literal, int reg2);
         static void st_mem_dir_reg(int reg1, int reg2);
 
+        static void handle_label(std::string ident);
+        static void mem_imm_symbol(std::string ident, int reg);
+        static void mem_dir_symbol(std::string ident, int reg);
+
+
+        static bool ass_end;
+
 
         //TODO: relocation tables
 
@@ -173,7 +180,7 @@
 
         static std::unordered_map<std::string, std::vector<flink>> flink_table_symbols;
 
-        static std::unordered_map<std::string, std::vector<flink>> relocation_table;
+        static std::unordered_map<std::string, std::vector<int>> relocation_table;
 
         static literal_pool lit_pool;
         static std::map<unsigned, int> literal_flink; //map memory_address->index in literal pool
