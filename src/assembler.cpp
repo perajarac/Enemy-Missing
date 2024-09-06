@@ -197,20 +197,62 @@ void Assembler::jump_sym(instruction ins, int gpr1, int gpr2, std::string ident)
     memory_content.push_back({current_address++, "00"});
 }
 
+void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
+    if(literal >= 0 && literal < 4096){
+        switch(ins){
+            case JMP_CODE:{
+                memory_content.push_back({current_address++, "30"});
+                break;
+            }
+            case BEQ_CODE:{
+                memory_content.push_back({current_address++, "31"});
+                break;
+            }case BNE_CODE:{
+                memory_content.push_back({current_address++, "32"});
+                break;
+            }case BGT_CODE:{
+                memory_content.push_back({current_address++, "33"});
+                break;
+            }
+        }
+        std::stringstream ss;
+        ss << std::hex << 0 << gpr1;
+        memory_content.push_back({current_address++, ss.str().substr(0,2)});
+        ss.str("");
+        ss.clear();
+        ss << std::hex << gpr2 << ((literal>>8)&0xf);
+        memory_content.push_back({current_address++, ss.str().substr(0,2)});
+        ss.str("");
+        ss.clear();
+        ss << std::hex << ((literal>>4)&0xf) << ((literal)&0xf);
+        memory_content.push_back({current_address++, ss.str().substr(0,2)});
+    }else{
+        switch(ins){
+            case JMP_CODE:{
+                memory_content.push_back({current_address++, "38"});
+                break;
+            }
+            case BEQ_CODE:{
+                memory_content.push_back({current_address++, "39"});
+                break;
+            }case BNE_CODE:{
+                memory_content.push_back({current_address++, "3a"});
+                break;
+            }case BGT_CODE:{
+                memory_content.push_back({current_address++, "3b"});
+                break;
+            }
+        }
+        std::stringstream ss;
+        ss << std::hex << 15 << gpr1;
+        memory_content.push_back({current_address++, ss.str().substr(0,2)});
+        literal = (literal << 8) | gpr2;
+        literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }
+}
 
 void Assembler::end_last_section(){
     if(lit_pool.literals.size()>0){
@@ -795,7 +837,6 @@ void Assembler::write_symbol_table_context() {
     ass_output << "---------------------------------------------\n";
     ass_output.close();
 }
-
 
 void Assembler::add_literal_pool_to_memory(){
     lit_pool.set_base(current_address);

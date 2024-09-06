@@ -12,9 +12,6 @@
     #include <algorithm>
     #include <unordered_set>
     #include <map>
-
-
-
     //tabelea simbola, tabela sekcija, relokaciona tabela
 
     class Assembler{
@@ -74,8 +71,6 @@
 
             void set_length(unsigned length);
         };
-
-
         struct literal_pool{
             unsigned _base;
             std::vector<int> literals;
@@ -100,7 +95,6 @@
 
         };
 
-        
         static void make_section(std::string& section_name);
 
         static void handle_instruction(instruction op_code, std::vector<int> operands);
@@ -152,7 +146,7 @@
         static void pop(int reg, bool csr);
         static void push(int reg);
         static void jump_sym(instruction ins, int gpr1, int gpr2, std::string ident);
-
+        static void jump_lit(instruction ins, int gpr1, int gpr2, int literal);
 
         static bool ass_end;
 
@@ -167,7 +161,6 @@
         static void wregim(int opr_reg, int reg);
         static void putlitip(int literal, int reg);
         static void wlitims(int literal, int reg);
-
 
         static std::ofstream ass_output;
 

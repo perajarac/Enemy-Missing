@@ -275,7 +275,6 @@
 				Assembler::mem_dir_symbol(ident,$4);
 			}
 
-			/* TODO: ADD LOAD WITH SIMBOLS */
 		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_DOLLAR TOKEN_NUM
 			{
 				std::cout << "Error! Unvalid instruction: store can not be executed with immediate operand\n";
@@ -308,6 +307,11 @@
 				std::cout << "Error! Value of symbol is not recognized in assembler phase\n";
 				Assembler::ass_end = true;
 			}
+		| TOKEN_LD TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_IDENT TOKEN_RBRACKET TOKEN_COMMA TOKEN_REG
+			{
+				std::cout << "Error! Value of symbol is not recognized in assembler phase\n";
+				Assembler::ass_end = true;
+			}
 		
 		| TOKEN_IRET
 			{ 
@@ -333,19 +337,37 @@
 				std::string ident = $2;
 				Assembler::jump_sym(Assembler::instruction::JMP_CODE, 0, 0, ident);
 			}
-			/*
-		| TOKEN_JMP spec_operand
-			{ if (!ended) mk_jmp($2); free_op($2); }
-		| TOKEN_BEQ TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA spec_operand
-			{ if (!ended) mk_branch(0x31, $2, $4, $6); free_op($6); }
-		| TOKEN_BNE TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA spec_operand
-			{ if (!ended) mk_branch(0x32, $2, $4, $6); free_op($6); }
-		| TOKEN_BGT TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA spec_operand
-			{ if (!ended) mk_branch(0x33, $2, $4, $6); free_op($6); }
-
-		| TOKEN_XCHG TOKEN_REG TOKEN_COMMA TOKEN_REG
-			{ if (!ended) mk_op(0x40, 0, $2, $4); }
-		; */
+		| TOKEN_BEQ TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA TOKEN_IDENT
+			{
+				std::string ident = $6;
+				Assembler::jump_sym(Assembler::instruction::BEQ_CODE, $2, $4, ident);
+			}
+		| TOKEN_BNE TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA TOKEN_IDENT
+			{
+				std::string ident = $6;
+				Assembler::jump_sym(Assembler::instruction::BNE_CODE, $2, $4, ident);
+			}
+		| TOKEN_BGT TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA TOKEN_IDENT
+			{
+				std::string ident = $6;
+				Assembler::jump_sym(Assembler::instruction::BGT_CODE, $2, $4, ident);
+			}
+		| TOKEN_JMP TOKEN_NUM
+			{
+				Assembler::jump_lit(Assembler::instruction::JMP_CODE, 0, 0,$2);
+			}
+		| TOKEN_BEQ TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA TOKEN_NUM
+			{
+				Assembler::jump_lit(Assembler::instruction::BEQ_CODE, $2, $4, $6);
+			}
+		| TOKEN_BNE TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA TOKEN_NUM
+			{
+				Assembler::jump_lit(Assembler::instruction::BNE_CODE, $2, $4, $6);
+			}
+		| TOKEN_BGT TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA TOKEN_NUM
+			{
+				Assembler::jump_lit(Assembler::instruction::BGT_CODE, $2, $4, $6);
+			}					
 
 spec_operand
 	:
