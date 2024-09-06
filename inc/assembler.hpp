@@ -75,11 +75,6 @@
             void set_length(unsigned length);
         };
 
-        struct flink{
-            unsigned address;
-                bool add = false;
-            flink(unsigned adr): address(adr) {}
-        };
 
         struct literal_pool{
             unsigned _base;
@@ -126,6 +121,7 @@
         static void end_last_section();
 
         static void resolve_literal_flink();
+        static void resovle_symbol_flink();
 
         static void handle_skip(unsigned bytes);
         static void handle_word(const std::string& sym_name);
@@ -144,6 +140,7 @@
         static void st_mem_dir_literal(int reg, int address);
         static void st_mem_dir_offset_literal(int reg1, int literal, int reg2);
         static void st_mem_dir_reg(int reg1, int reg2);
+        static void st_mem_dir_symbol(std::string ident, int reg);
 
         static void handle_label(std::string ident);
         static void mem_imm_symbol(std::string ident, int reg);
@@ -152,14 +149,12 @@
 
         static bool ass_end;
 
-
-        //TODO: relocation tables
-
     private:
         //helper functions
         static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands);
 
         static bool sym_exist(const std::string& sym_name);
+        static int sym_index(const std::string& sym_name);
 
         static void wliteralim(int literal);
         static void wregim(int opr_reg, int reg);
@@ -178,7 +173,7 @@
 
         static std::vector<std::pair<unsigned, std::string>> memory_content;
 
-        static std::unordered_map<std::string, std::vector<flink>> flink_table_symbols;
+        static std::unordered_map<std::string, std::vector<int>> symbols_flink;
 
         static std::unordered_map<std::string, std::vector<int>> relocation_table;
 

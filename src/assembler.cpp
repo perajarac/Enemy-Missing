@@ -7,7 +7,7 @@ std::vector<Assembler::section> Assembler::section_tables;
 std::vector<Assembler::symbol> Assembler::sym_table;
 std::vector<std::pair<unsigned, std::string>> Assembler::memory_content;
 
-std::unordered_map<std::string, std::vector<Assembler::flink>> Assembler::flink_table_symbols;
+std::unordered_map<std::string, std::vector<int>> Assembler::symbols_flink;
 std::map<unsigned, int> Assembler::literal_flink;
 
 Assembler::literal_pool Assembler::lit_pool;
@@ -136,6 +136,8 @@ void Assembler::end_last_section(){
         add_literal_pool_to_memory();
         resolve_literal_flink();
     }
+    resovle_symbol_flink();
+    symbols_flink.clear();
     literal_flink.clear();
     lit_pool.literals.clear();
     lit_pool.set_base(0);
@@ -190,7 +192,6 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
                     }
                 }
             }
-            relocation_table[sym_name].push_back(current_address);
             break;
         }
         case bind_type::GLO:{
@@ -204,7 +205,6 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
                     }
                 }
             }
-            relocation_table[sym_name].push_back(current_address);
             break;
         }default:
             break;
@@ -213,12 +213,11 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
 
 void Assembler::handle_word(const std::string& sym_name){
     if(!sym_exist(sym_name)){
-        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.size() ? section_tables.back().get_name(): "UND", sym_name);
-        //TODO: ADD TO RELOC TABLE
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", sym_name);
         add_symbol(new_sym);
     }
 
-    flink_table_symbols[sym_name].push_back({current_address});
+    relocation_table[sym_name].push_back(current_address);
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -305,6 +304,56 @@ void Assembler::mem_ind_register(int opr_reg, int reg){
     wregim(opr_reg, reg);
 }
 
+//-----------------------------symbol as operand-----------------------------------------
+void Assembler::mem_imm_symbol(std::string ident, int reg){
+
+    int index = sym_index(ident);
+
+    if(index!=-1 && sym_table[index].get_section_name() == "UND"){
+        sym_table[index].set_section_name(section_tables.back().get_name());
+    }else if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
+        add_symbol(new_sym);
+    }
+    memory_content.push_back({current_address++, "92"});
+    std::stringstream ss;
+    ss << std::hex << reg << 15;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    symbols_flink[ident].push_back(current_address);
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+
+}
+
+void Assembler::mem_dir_symbol(std::string ident, int reg){
+
+    int index = sym_index(ident);
+
+    if(index!=-1 && sym_table[index].get_section_name() == "UND"){
+        sym_table[index].set_section_name(section_tables.back().get_name());
+    }else if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
+        add_symbol(new_sym);
+    }
+
+    memory_content.push_back({current_address++, "92"});
+    std::stringstream ss;
+    ss << std::hex << reg << 15;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    symbols_flink[ident].push_back(current_address);
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+
+
+    memory_content.push_back(std::make_pair(current_address++, "92"));
+    std::stringstream sss;
+    sss << std::hex << reg << reg;
+    memory_content.push_back(std::make_pair(current_address++, sss.str().substr(0,2)));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+
+}
+
 //------------------------------STORE INSTRUCTION----------------------------------------- st %gpr, operand --> operand <= gpr
 //-----------------------------literal as operand-----------------------------------------
 
@@ -377,6 +426,20 @@ void Assembler::st_mem_dir_offset_literal(int reg1, int literal, int reg2){
     }
 }
 
+void Assembler::st_mem_dir_symbol(std::string ident, int reg){
+    memory_content.push_back(std::make_pair(current_address++, "82"));
+    memory_content.push_back(std::make_pair(current_address++, "0f"));
+
+    int combined = (reg << 4) | 0x0;
+    std::stringstream ss;
+
+    ss << std::hex << std::setw(2) << std::setfill('0') << combined;
+    memory_content.push_back(std::make_pair(current_address, ss.str()));
+    
+    symbols_flink[ident].push_back(current_address++);
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+}
+
 //-----------------------------symbol as operand-----------------------------------------
 
 
@@ -386,47 +449,58 @@ void Assembler::handle_label(std::string ident){
         ass_end = true;
         return;
     }
-    int index = -1;
-    for(int i = 0;i<sym_table.size();i++){
-        if(ident == sym_table[i].get_name()){
-            index = i;
-        }
-    }
+    int index = sym_index(ident);
 
-    if(index!=-1 && sym_table[index].get_section_name() == "UND"){
+    if(index!=-1 && sym_table[index].get_bind() == bind_type::EXT){
+        std::cout << "Error, you can't define extern symbol\n";
+        ass_end = true;
+        return;
+    }else if(sym_table[index].get_value() != -1){
+        std::cout << "Error, label can't be defined twice\n";
+        ass_end = true;
+        return;
+    }else if(index!=-1 && sym_table[index].get_section_name() == "UND" ){
         sym_table[index].set_section_name(section_tables.back().get_name());
     }else if(!sym_exist(ident)){
         symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
         add_symbol(new_sym);
-    }else{
-        std::cout << "Error, label can't be defined twice\n";
-        ass_end = true;
+        index = sym_index(ident);
     }
+    sym_table[index].set_value(current_address - section_tables.back().get_base());
 }
 
+void Assembler::resovle_symbol_flink(){
+    for(auto sym:symbols_flink){ //goes for every symbol
+        for(auto address:sym.second){ //for every address that is coresponding with that symbol
+            for (auto it = memory_content.begin(); it != memory_content.end(); ++it) { //searching memmory to find one of the addresses that coresponds with symbol
+                if (it->first == address) { //if search is success adds offset to that symbol in literal pool
+                    unsigned pomeraj = current_address - address + 2;
 
-void Assembler::mem_imm_symbol(std::string ident, int reg){}
-void Assembler::mem_dir_symbol(std::string ident, int reg){}
+                    unsigned low_byte = pomeraj & 0xFF;         
+                    unsigned high_nibble = ((pomeraj) & 0xF00) >> 8;
 
+                    std::stringstream ss;
+                    ss << std::hex << (high_nibble);
+                    it->second[1] = ss.str()[0];
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    ++it;
+                    if (it != memory_content.end()) {
+                        std::stringstream ss_low;
+                        ss_low << std::setw(2) << std::setfill('0') << std::hex << low_byte;
+                        it->second = ss_low.str();
+                    }
+                        break;
+                        
+                }
+            }
+        }
+        relocation_table[sym.first].push_back(current_address);
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+        memory_content.push_back(std::make_pair(current_address++, "00"));
+    }
+}
 
 void Assembler::resolve_literal_flink(){
     std::unordered_map<int,int> processed;
@@ -547,6 +621,15 @@ void Assembler::section::set_length(unsigned length) {
     _length = length;
 }
 
+int Assembler::sym_index(const std::string& ident){
+    int index = -1;
+    for(int i = 0;i<sym_table.size();i++){
+        if(ident == sym_table[i].get_name()){
+            index = i;
+        }
+    }
+    return index;
+}
 
 //------------------Writes in file----------------------
 

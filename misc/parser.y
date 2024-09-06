@@ -297,6 +297,16 @@
 			{	
 				Assembler::st_mem_dir_offset_literal($5,$7,$2);
 			}
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_IDENT
+			{	
+				std::string ident = $4;
+				Assembler::st_mem_dir_symbol(ident,$2);
+			}
+		| TOKEN_ST TOKEN_REG TOKEN_COMMA TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_IDENT TOKEN_RBRACKET
+			{
+				std::cout << "Error! Value of symbol is not recognized in assembler phase\n";
+				Assembler::ass_end = true;
+			}
 		
 
 
@@ -384,16 +394,14 @@ sys_reg
 			yyparse();
 		} while(!feof(yyin));
 
-
+	Assembler::end_last_section();
 	if(Assembler::ass_end == false){
-		Assembler::end_last_section();
 		Assembler::write_section_context();
 		Assembler::write_symbol_table_context();
 		Assembler::write_memory_content();
 	}
 
 	fclose(file);
-
 
 		return 0;
 	}
