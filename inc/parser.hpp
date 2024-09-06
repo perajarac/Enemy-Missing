@@ -113,7 +113,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 22 "misc/parser.y"
+#line 23 "misc/parser.y"
 
 		int num;
 		int op_code;

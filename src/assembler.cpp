@@ -131,6 +131,87 @@ void Assembler::arithmetic_operation(const std::string& arithmetic_code, const s
             memory_content.push_back(std::make_pair(current_address++, "00"));
 }
 
+void Assembler::mk_iret(){
+    pop(15,false);
+    pop(0, true);
+}
+
+void Assembler::mk_call(std::string ident){
+    memory_content.push_back({current_address++, "21"});
+    std::stringstream ss;
+    ss << std::hex << 0 << 15;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+
+
+    if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", ident);
+        add_symbol(new_sym);
+    }
+
+    symbols_flink[ident].push_back(current_address);
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+}
+
+void Assembler::mk_call(int literal){
+    if(literal>=0 && literal < 4096){
+        memory_content.push_back({current_address++, "20"});
+        memory_content.push_back({current_address++, "00"});
+        wliteralim(literal);
+    }else{
+        memory_content.push_back(std::make_pair(current_address++, "21"));
+        putlitip(literal,0);
+    }
+}
+
+void Assembler::jump_sym(instruction ins, int gpr1, int gpr2, std::string ident){
+
+    if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", ident);
+        add_symbol(new_sym);
+    }
+    switch(ins){
+        case JMP_CODE:{
+            memory_content.push_back({current_address++, "38"});
+            break;
+        }
+        case BEQ_CODE:{
+            memory_content.push_back({current_address++, "39"});
+            break;
+        }case BNE_CODE:{
+            memory_content.push_back({current_address++, "3a"});
+            break;
+        }case BGT_CODE:{
+            memory_content.push_back({current_address++, "3b"});
+            break;
+        }
+    }
+    std::stringstream ss;
+    ss << std::hex << 15 << gpr1;
+    memory_content.push_back({current_address++, ss.str().substr(0,2)});
+    symbols_flink[ident].push_back(current_address);
+    ss.str("");
+    ss.clear();
+    ss << std::hex << gpr2 << 0;
+    memory_content.push_back({current_address++, ss.str().substr(0,2)});
+    memory_content.push_back({current_address++, "00"});
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void Assembler::end_last_section(){
     if(lit_pool.literals.size()>0){
         add_literal_pool_to_memory();
@@ -183,27 +264,22 @@ void Assembler::handle_bind_type(bind_type bt, std::string sym_name){
     switch(bt){
         case bind_type::EXT:{
             if(!sym_exist(sym_name)){
-            symbol new_sym(sym_table.size(),-1,bind_type::EXT, section_tables.size() ? section_tables.back().get_name(): "UND", sym_name);
+            symbol new_sym(sym_table.size(),-1,bind_type::EXT, "UND", sym_name);
             add_symbol(new_sym);
             }else{
-                for(auto& sym:sym_table){
-                    if(sym_name == sym.get_name()){
-                        sym.set_bind(bt);
-                    }
-                }
+                int index = sym_index(sym_name);
+                sym_table[index].set_bind(bt);    
             }
             break;
         }
         case bind_type::GLO:{
+            int index = sym_index(sym_name);
             if(!sym_exist(sym_name)){
-                symbol new_sym(sym_table.size(),-1,bind_type::GLO, section_tables.size() ? section_tables.back().get_name(): "UND", sym_name);
+                symbol new_sym(sym_table.size(),-1,bind_type::GLO, "UND", sym_name);
                 add_symbol(new_sym);
             }else{
-                for(auto& sym:sym_table){
-                    if(sym_name == sym.get_name()){
-                        sym.set_bind(bt);
-                    }
-                }
+                int index = sym_index(sym_name);
+                sym_table[index].set_bind(bt);    
             }
             break;
         }default:
@@ -304,15 +380,36 @@ void Assembler::mem_ind_register(int opr_reg, int reg){
     wregim(opr_reg, reg);
 }
 
+void Assembler::pop(int reg, bool csr){
+    if(csr){
+        memory_content.push_back(std::make_pair(current_address++, "97"));
+    }else{
+        memory_content.push_back(std::make_pair(current_address++, "93"));
+    }
+    std::stringstream ss;
+    ss << std::hex << reg << 14;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "04"));
+}
+
+void Assembler::push(int reg){
+    memory_content.push_back(std::make_pair(current_address++, "81"));
+    std::stringstream ss;
+    ss << std::hex << 14 << 0;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    ss.str("");
+    ss.clear();
+    ss << std::hex << reg << 0;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    memory_content.push_back(std::make_pair(current_address++, "04")); 
+}
+
 //-----------------------------symbol as operand-----------------------------------------
 void Assembler::mem_imm_symbol(std::string ident, int reg){
 
-    int index = sym_index(ident);
-
-    if(index!=-1 && sym_table[index].get_section_name() == "UND"){
-        sym_table[index].set_section_name(section_tables.back().get_name());
-    }else if(!sym_exist(ident)){
-        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
+    if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", ident);
         add_symbol(new_sym);
     }
     memory_content.push_back({current_address++, "92"});
@@ -327,12 +424,8 @@ void Assembler::mem_imm_symbol(std::string ident, int reg){
 
 void Assembler::mem_dir_symbol(std::string ident, int reg){
 
-    int index = sym_index(ident);
-
-    if(index!=-1 && sym_table[index].get_section_name() == "UND"){
-        sym_table[index].set_section_name(section_tables.back().get_name());
-    }else if(!sym_exist(ident)){
-        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
+    if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", ident);
         add_symbol(new_sym);
     }
 
@@ -427,6 +520,11 @@ void Assembler::st_mem_dir_offset_literal(int reg1, int literal, int reg2){
 }
 
 void Assembler::st_mem_dir_symbol(std::string ident, int reg){
+    if(!sym_exist(ident)){
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", ident);
+        add_symbol(new_sym);
+    }
+
     memory_content.push_back(std::make_pair(current_address++, "82"));
     memory_content.push_back(std::make_pair(current_address++, "0f"));
 
@@ -455,18 +553,18 @@ void Assembler::handle_label(std::string ident){
         std::cout << "Error, you can't define extern symbol\n";
         ass_end = true;
         return;
-    }else if(sym_table[index].get_value() != -1){
+    }else if(index!=-1 && sym_table[index].get_value() != -1){
         std::cout << "Error, label can't be defined twice\n";
         ass_end = true;
         return;
     }else if(index!=-1 && sym_table[index].get_section_name() == "UND" ){
-        sym_table[index].set_section_name(section_tables.back().get_name());
+        sym_table[index].set_section_name(section_tables.back().get_name()); //if sym is global but undefined
     }else if(!sym_exist(ident)){
-        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident);
+        symbol new_sym(sym_table.size(),-1,bind_type::LOC, section_tables.back().get_name(), ident); //if symbol doesnt exists
         add_symbol(new_sym);
         index = sym_index(ident);
     }
-    sym_table[index].set_value(current_address - section_tables.back().get_base());
+    sym_table[index].set_value(current_address - section_tables.back().get_base()); //set value or global or local symbol relative from section begin
 }
 
 void Assembler::resovle_symbol_flink(){

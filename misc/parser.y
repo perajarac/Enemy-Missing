@@ -8,6 +8,7 @@
 	extern FILE* yyin;
 
 	extern int line_number;
+	int parse = 1;
 
 	void yyerror(const char* s);
 
@@ -127,7 +128,7 @@
 			Assembler::handle_ascii(ascii);
 		}
 		| TOKEN_END {
-			//TODO
+			parse = 0;
 		}
 		| TOKEN_IDENT TOKEN_COLON  {
 			std::string ident = $1;
@@ -308,24 +309,31 @@
 				Assembler::ass_end = true;
 			}
 		
+		| TOKEN_IRET
+			{ 
+				Assembler::mk_iret();
+			}
 
-
-
-
-		/* | TOKEN_LD op TOKEN_COMMA TOKEN_REG
-			{ if (!ended) mk_ld($2, $4); free_op($2); }
-		| TOKEN_ST TOKEN_REG TOKEN_COMMA op
-			{ if (!ended) mk_st($2, $4); free_op($4); } */
-		/* | TOKEN_CSRRD csreg TOKEN_COMMA TOKEN_REG
-			{ if (!ended) mk_csrrd($2, $4); }
-		| TOKEN_CSRWR TOKEN_REG TOKEN_COMMA csreg
-			{ if (!ended) mk_csrwr($2, $4); } */
-		/*| TOKEN_IRET
-			{ if (!ended) mk_iret(); }
 		| TOKEN_CALL spec_operand
-			{ if (!ended) mk_call($2); free_op($2);}
+		| TOKEN_PUSH TOKEN_REG
+			{
+				Assembler::push($2);
+			}
+		| TOKEN_POP TOKEN_REG
+			{ 
+				Assembler::pop($2,false);
+			}
+		
 		| TOKEN_RET
-			{ if (!ended) mk_pop(PC_CODE); }
+			{ 
+				Assembler::pop(15, false); 
+			}
+		| TOKEN_JMP TOKEN_IDENT
+			{
+				std::string ident = $2;
+				Assembler::jump_sym(Assembler::instruction::JMP_CODE, 0, 0, ident);
+			}
+			/*
 		| TOKEN_JMP spec_operand
 			{ if (!ended) mk_jmp($2); free_op($2); }
 		| TOKEN_BEQ TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA spec_operand
@@ -334,45 +342,23 @@
 			{ if (!ended) mk_branch(0x32, $2, $4, $6); free_op($6); }
 		| TOKEN_BGT TOKEN_REG TOKEN_COMMA TOKEN_REG TOKEN_COMMA spec_operand
 			{ if (!ended) mk_branch(0x33, $2, $4, $6); free_op($6); }
-		| TOKEN_PUSH TOKEN_REG
-			{ if (!ended) mk_push($2); }
-		| TOKEN_POP TOKEN_REG
-			{ if (!ended) mk_pop($2); }
+
 		| TOKEN_XCHG TOKEN_REG TOKEN_COMMA TOKEN_REG
 			{ if (!ended) mk_op(0x40, 0, $2, $4); }
 		; */
 
-		/* | TOKEN_IDENT {
-			$$ = operand(MEM_SYM, 0, $1, 0);
+spec_operand
+	:
+	TOKEN_IDENT
+		{
+			std::string ident = $1;
+			Assembler::mk_call(ident);
 		}
-		| TOKEN_DOLLAR TOKEN_NUM{
-			$$ = operand(IMM_LIT, $2, 0, 0);
+	|TOKEN_NUM
+		{
+			Assembler::mk_call($1);
 		}
-		| TOKEN_DOLLAR TOKEN_IDENT{
-			$$ = operand(IMM_SYM, 0, $2, 0);
-		}
-		| TOKEN_REG {
-			$$ = operand(IMM_REG, 0, 0, $1);
-		}
-		| TOKEN_LBRACKET TOKEN_REG TOKEN_RBRACKET {
-			$$ = operand(MEM_REG, 0, 0, $2);
-		}
-		| TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_NUM TOKEN_RBRACKET {
-			$$ = operand(MEM_REG_LIT, $4, 0, $2);
-		}
-		| TOKEN_LBRACKET TOKEN_REG TOKEN_PLUS TOKEN_IDENT TOKEN_RBRACKET {
-			$$ = operand(MEM_REG_SYM, 0, $4, $2);
-		}
-		;  */
-
-	/* spec_operand
-		: TOKEN_NUM {
-			$$ = operand(IMM_LIT, $1, 0, 0);}
-		| TOKEN_IDENT {
-			$$ = operand(IMM_SYM, 0, $1, 0);
-		}
-		; */
-
+	;
 sys_reg
     : TOKEN_STATUS   { $$ = $1; }
     | TOKEN_HANDLER  { $$ = $1; }

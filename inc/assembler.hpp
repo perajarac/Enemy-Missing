@@ -99,6 +99,7 @@
             }
 
         };
+
         
         static void make_section(std::string& section_name);
 
@@ -129,22 +130,28 @@
         static void handle_bind_type(bind_type bt, std::string sym_name);
         static void handle_ascii(std::string& ascii);
 
-
+        //---------------------load------------------------------------
         static void mem_imm_literal(int literal, int reg);
         static void mem_dir_literal(int literal, int reg);
         static void mem_dir_offset_literal(int reg1, int literal, int reg2);
-
         static void mem_dir_register(int opr_reg, int reg);
         static void mem_ind_register(int opr_reg, int reg);
-
+        static void mem_imm_symbol(std::string ident, int reg);
+        static void mem_dir_symbol(std::string ident, int reg);
+        //--------------------store------------------------------------
         static void st_mem_dir_literal(int reg, int address);
         static void st_mem_dir_offset_literal(int reg1, int literal, int reg2);
         static void st_mem_dir_reg(int reg1, int reg2);
         static void st_mem_dir_symbol(std::string ident, int reg);
 
         static void handle_label(std::string ident);
-        static void mem_imm_symbol(std::string ident, int reg);
-        static void mem_dir_symbol(std::string ident, int reg);
+
+        static void mk_iret();
+        static void mk_call(std::string ident);
+        static void mk_call(int literal);
+        static void pop(int reg, bool csr);
+        static void push(int reg);
+        static void jump_sym(instruction ins, int gpr1, int gpr2, std::string ident);
 
 
         static bool ass_end;
@@ -160,6 +167,7 @@
         static void wregim(int opr_reg, int reg);
         static void putlitip(int literal, int reg);
         static void wlitims(int literal, int reg);
+
 
         static std::ofstream ass_output;
 
