@@ -1,14 +1,16 @@
 # Targets
-TARGET = main
 # OBJS = src/assembler.o src/main.o src/flex.o src/parser.o
-OBJS  = src/assembler.o src/parser.o src/flex.o
+OBJS_ASS  = src/assembler.o src/parser.o src/flex.o src/mainass.o
 
-# Default target
-all: $(TARGET)
-
+all: asembler
 # Link executable
-$(TARGET): $(OBJS)
-	g++ -o $@ $(OBJS)
+asembler: $(OBJS_ASS)
+	g++ -o $@ $(OBJS_ASS)
+
+
+src/mainass.o: src/mainass.cpp
+	g++ -c -o $@ $<
+
 
 # Compile .cpp files to object files
 src/assembler.o: src/assembler.cpp inc/assembler.hpp
@@ -33,4 +35,4 @@ src/parser.o: src/parser.cpp
 
 # Clean target
 clean:
-	rm -f $(TARGET) $(OBJS) src/flex.cpp src/parser.cpp src/parser.output assout.txt
+	rm -f assembler asembler src/*.o src/flex.cpp src/parser.cpp src/parser.output assout.txt *.o

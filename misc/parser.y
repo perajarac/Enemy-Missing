@@ -390,29 +390,6 @@ sys_reg
 
 	%%
 
-	int main() {
-
-
-	FILE *file = fopen("src/test.s", "r");
-		if(!file) printf("couldnt open file");
-
-		yyin = file;
-
-		do {
-			yyparse();
-		} while(!feof(yyin));
-
-	Assembler::end_last_section();
-	if(Assembler::ass_end == false){
-		Assembler::write_section_context();
-		Assembler::write_symbol_table_context();
-		Assembler::write_memory_content();
-	}
-
-	fclose(file);
-
-		return 0;
-	}
 
 	void yyerror(const char* s) {
 		fprintf(stderr, "Parse error at line %d:\n", line_number);

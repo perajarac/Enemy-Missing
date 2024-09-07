@@ -150,6 +150,8 @@
 
         static bool ass_end;
 
+        static void set_output(std::string str);
+
     private:
         //helper functions
         static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands);
@@ -161,6 +163,8 @@
         static void wregim(int opr_reg, int reg);
         static void putlitip(int literal, int reg);
         static void wlitims(int literal, int reg);
+
+        static std::string output_file;
 
         static std::ofstream ass_output;
 

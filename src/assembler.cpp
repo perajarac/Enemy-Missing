@@ -2,6 +2,7 @@
 
 
 bool Assembler::ass_end = false;
+std::string Assembler::output_file;
 
 std::vector<Assembler::section> Assembler::section_tables;
 std::vector<Assembler::symbol> Assembler::sym_table;
@@ -17,6 +18,10 @@ std::unordered_map<std::string, std::vector<int>> Assembler::relocation_table;
 std::ofstream  Assembler::ass_output;
 unsigned Assembler::current_address = 0;
 unsigned Assembler::location_counter = 0;
+
+void Assembler::set_output(std::string output){
+    output_file = output;
+}
 
 void Assembler::make_section(std::string& section_name){
     if(section_tables.size()>0) end_last_section();
@@ -189,12 +194,27 @@ void Assembler::jump_sym(instruction ins, int gpr1, int gpr2, std::string ident)
     std::stringstream ss;
     ss << std::hex << 15 << gpr1;
     memory_content.push_back({current_address++, ss.str().substr(0,2)});
-    symbols_flink[ident].push_back(current_address);
     ss.str("");
     ss.clear();
-    ss << std::hex << gpr2 << 0;
-    memory_content.push_back({current_address++, ss.str().substr(0,2)});
-    memory_content.push_back({current_address++, "00"});
+    int index = sym_index(ident);
+    if(index!=-1 && sym_table[index].get_section_name() == section_tables.back().get_name()){
+        section sec = section_tables.back();
+        int pomeraj = (sec.get_base() + sym_table[index].get_value()) - (current_address - 2);
+
+        ss << std::hex << gpr2 <<((pomeraj>>8)&0xf);
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+        ss.str("");
+        ss.clear();
+        ss << std::hex << ((pomeraj>>4)&0xf) << ((pomeraj)&0xf);
+        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));  
+
+
+    }else{
+        ss << std::hex << gpr2 << 0;
+        symbols_flink[ident].push_back(current_address);
+        memory_content.push_back({current_address++, ss.str().substr(0,2)});
+        memory_content.push_back({current_address++, "00"});
+    }
 }
 
 void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
@@ -442,9 +462,12 @@ void Assembler::push(int reg){
     memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
     ss.str("");
     ss.clear();
-    ss << std::hex << reg << 0;
+    ss << std::hex << reg <<((-4>>8)&0xf);
     memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-    memory_content.push_back(std::make_pair(current_address++, "04")); 
+    ss.str("");
+    ss.clear();
+    ss << std::hex << ((-4>>4)&0xf) << ((-4)&0xf);
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2))); 
 }
 
 //-----------------------------symbol as operand-----------------------------------------
@@ -589,10 +612,11 @@ void Assembler::handle_label(std::string ident){
         ass_end = true;
         return;
     }
+
     int index = sym_index(ident);
 
     if(index!=-1 && sym_table[index].get_bind() == bind_type::EXT){
-        std::cout << "Error, you can't define extern symbol\n";
+        std:: cout << "Error, cant define extern symbol";
         ass_end = true;
         return;
     }else if(index!=-1 && sym_table[index].get_value() != -1){
@@ -775,7 +799,7 @@ int Assembler::sym_index(const std::string& ident){
 
 
 void Assembler::write_section_context(){
-    ass_output.open("assout.txt", std::ios::app);
+    ass_output.open(output_file, std::ios::app);
     ass_output << "----------Table of sections----------\n";
     
     
@@ -796,7 +820,7 @@ void Assembler::write_section_context(){
 }
 
 void Assembler::write_memory_content(){
-    ass_output.open("assout.txt",std::ios::app);
+    ass_output.open(output_file,std::ios::app);
     ass_output << "------------Section tables-----------\n";
     for(unsigned current_address = 0;current_address < memory_content.size();current_address++){
         if(current_address % 8 == 0){
@@ -815,7 +839,7 @@ void Assembler::write_memory_content(){
 
 
 void Assembler::write_symbol_table_context() {
-    ass_output.open("assout.txt", std::ios::app);
+    ass_output.open(output_file, std::ios::app);
     ass_output << "----------------Symbol Table----------------\n";
     
     ass_output << std::left << std::setw(10) << "Num:" 
