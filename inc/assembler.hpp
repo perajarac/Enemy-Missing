@@ -147,6 +147,7 @@
         static void push(int reg);
         static void jump_sym(instruction ins, int gpr1, int gpr2, std::string ident);
         static void jump_lit(instruction ins, int gpr1, int gpr2, int literal);
+        static void resolve_jump();
 
         static bool ass_end;
 

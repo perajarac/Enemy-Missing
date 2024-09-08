@@ -1,8 +1,8 @@
 #include "../inc/assembler.hpp"
 
 
-bool Assembler::ass_end = false;
 std::string Assembler::output_file;
+bool Assembler::ass_end = false;
 
 std::vector<Assembler::section> Assembler::section_tables;
 std::vector<Assembler::symbol> Assembler::sym_table;
@@ -196,25 +196,12 @@ void Assembler::jump_sym(instruction ins, int gpr1, int gpr2, std::string ident)
     memory_content.push_back({current_address++, ss.str().substr(0,2)});
     ss.str("");
     ss.clear();
-    int index = sym_index(ident);
-    if(index!=-1 && sym_table[index].get_section_name() == section_tables.back().get_name()){
-        section sec = section_tables.back();
-        int pomeraj = (sec.get_base() + sym_table[index].get_value()) - (current_address - 2);
 
-        ss << std::hex << gpr2 <<((pomeraj>>8)&0xf);
-        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-        ss.str("");
-        ss.clear();
-        ss << std::hex << ((pomeraj>>4)&0xf) << ((pomeraj)&0xf);
-        memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));  
-
-
-    }else{
-        ss << std::hex << gpr2 << 0;
-        symbols_flink[ident].push_back(current_address);
-        memory_content.push_back({current_address++, ss.str().substr(0,2)});
-        memory_content.push_back({current_address++, "00"});
-    }
+    ss << std::hex << gpr2 << 0;
+    symbols_flink[ident].push_back(current_address);
+    memory_content.push_back({current_address++, ss.str().substr(0,2)});
+    memory_content.push_back({current_address++, "00"});
+    
 }
 
 void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
@@ -274,11 +261,46 @@ void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
     }
 }
 
+void Assembler::resolve_jump(){
+    auto section = section_tables.back();
+    std::vector<std::string>tbd;
+    for(auto sym_flink: symbols_flink){ //for every symbol in flink
+        for(auto sym:sym_table){
+            if(sym.get_name() == sym_flink.first && sym.get_section_name() == section.get_name()){ //check if it is defined withing current section
+                for(auto address:sym_flink.second){ //if it is it patches memory content of jmp instruction
+                    for(auto data = memory_content.begin(); data != memory_content.end();data++){
+                        if(data->first == address){
+                            int pomeraj = (section.get_base() + sym.get_value()) - current_address + 2; //with offset to that symbol
+                            std::stringstream ss;
+                            ss << std::hex <<((pomeraj>>8)&0xf);
+                            data->second[1] = ss.str()[0];
+                            ss.str("");
+                            ss.clear();
+                            ss << std::hex << ((pomeraj>>4)&0xf) << ((pomeraj)&0xf);
+                            data++;
+                            if(data!=memory_content.end())data->second = ss.str();
+
+                        }
+                    }
+                }
+
+                tbd.push_back(sym.get_name()); //add that symbol to entries vector to be deleted from sym flink 
+                break;
+            }
+        }
+    }
+
+    for(auto sym_name :tbd){
+        symbols_flink.erase(sym_name); //delete all entries with resolved symbols
+    }
+}
+
 void Assembler::end_last_section(){
     if(lit_pool.literals.size()>0){
         add_literal_pool_to_memory();
         resolve_literal_flink();
     }
+    resolve_jump();
     resovle_symbol_flink();
     symbols_flink.clear();
     literal_flink.clear();
