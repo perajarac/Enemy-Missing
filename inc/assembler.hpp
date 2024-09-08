@@ -169,7 +169,7 @@
 
         static std::ofstream ass_output;
 
-        static unsigned current_address;
+        static int current_address;
 
         static unsigned location_counter;
 
@@ -177,14 +177,14 @@
 
         static std::vector<symbol> sym_table;
 
-        static std::vector<std::pair<unsigned, std::string>> memory_content;
+        static std::vector<std::pair<int, std::string>> memory_content;
 
         static std::unordered_map<std::string, std::vector<int>> symbols_flink;
 
         static std::unordered_map<std::string, std::vector<int>> relocation_table;
 
         static literal_pool lit_pool;
-        static std::map<unsigned, int> literal_flink; //map memory_address->index in literal pool
+        static std::map<int, int> literal_flink; //map memory_address->index in literal pool
 
     };
 

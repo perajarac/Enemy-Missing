@@ -6,17 +6,17 @@ bool Assembler::ass_end = false;
 
 std::vector<Assembler::section> Assembler::section_tables;
 std::vector<Assembler::symbol> Assembler::sym_table;
-std::vector<std::pair<unsigned, std::string>> Assembler::memory_content;
+std::vector<std::pair<int, std::string>> Assembler::memory_content;
 
 std::unordered_map<std::string, std::vector<int>> Assembler::symbols_flink;
-std::map<unsigned, int> Assembler::literal_flink;
+std::map<int, int> Assembler::literal_flink;
 
 Assembler::literal_pool Assembler::lit_pool;
 
 std::unordered_map<std::string, std::vector<int>> Assembler::relocation_table;
 
 std::ofstream  Assembler::ass_output;
-unsigned Assembler::current_address = 0;
+int Assembler::current_address = 0;
 unsigned Assembler::location_counter = 0;
 
 void Assembler::set_output(std::string output){
@@ -270,7 +270,7 @@ void Assembler::resolve_jump(){
                 for(auto address:sym_flink.second){ //if it is it patches memory content of jmp instruction
                     for(auto data = memory_content.begin(); data != memory_content.end();data++){
                         if(data->first == address){
-                            int pomeraj = (section.get_base() + sym.get_value()) - current_address + 2; //with offset to that symbol
+                            int pomeraj = (section.get_base() + sym.get_value()) - address + 2; //with offset to that symbol
                             std::stringstream ss;
                             ss << std::hex <<((pomeraj>>8)&0xf);
                             data->second[1] = ss.str()[0];
