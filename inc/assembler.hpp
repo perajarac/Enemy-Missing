@@ -180,6 +180,7 @@
         static std::vector<std::pair<int, std::string>> memory_content;
 
         static std::unordered_map<std::string, std::vector<int>> symbols_flink;
+        static std::unordered_map<std::string, std::vector<int>> symbols_jump_flink;
 
         static std::unordered_map<std::string, std::vector<int>> relocation_table;
 

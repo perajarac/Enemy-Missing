@@ -9,6 +9,7 @@ std::vector<Assembler::symbol> Assembler::sym_table;
 std::vector<std::pair<int, std::string>> Assembler::memory_content;
 
 std::unordered_map<std::string, std::vector<int>> Assembler::symbols_flink;
+std::unordered_map<std::string, std::vector<int>> Assembler::symbols_jump_flink;
 std::map<int, int> Assembler::literal_flink;
 
 Assembler::literal_pool Assembler::lit_pool;
@@ -198,7 +199,7 @@ void Assembler::jump_sym(instruction ins, int gpr1, int gpr2, std::string ident)
     ss.clear();
 
     ss << std::hex << gpr2 << 0;
-    symbols_flink[ident].push_back(current_address);
+    symbols_jump_flink[ident].push_back(current_address);
     memory_content.push_back({current_address++, ss.str().substr(0,2)});
     memory_content.push_back({current_address++, "00"});
     
@@ -264,34 +265,31 @@ void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
 void Assembler::resolve_jump(){
     auto section = section_tables.back();
     std::vector<std::string>tbd;
-    for(auto sym_flink: symbols_flink){ //for every symbol in flink
-        for(auto sym:sym_table){
-            if(sym.get_name() == sym_flink.first && sym.get_section_name() == section.get_name()){ //check if it is defined withing current section
-                for(auto address:sym_flink.second){ //if it is it patches memory content of jmp instruction
-                    for(auto data = memory_content.begin(); data != memory_content.end();data++){
-                        if(data->first == address){
-                            int pomeraj = (section.get_base() + sym.get_value()) - address + 2; //with offset to that symbol
-                            std::stringstream ss;
-                            ss << std::hex <<((pomeraj>>8)&0xf);
-                            data->second[1] = ss.str()[0];
-                            ss.str("");
-                            ss.clear();
-                            ss << std::hex << ((pomeraj>>4)&0xf) << ((pomeraj)&0xf);
-                            data++;
-                            if(data!=memory_content.end())data->second = ss.str();
-
-                        }
-                    }
-                }
-
-                tbd.push_back(sym.get_name()); //add that symbol to entries vector to be deleted from sym flink 
-                break;
+    for(auto sym_flink: symbols_jump_flink){ //for every symbol in flink
+        symbol sym = sym_table[sym_index(sym_flink.first)];
+        if(sym.get_name() != sym_flink.first || sym.get_section_name() != section.get_name())continue;//check if it is defined withing current section
+        for(auto address:sym_flink.second){ //if it is it patches memory content of jmp instruction
+            for(auto data = memory_content.begin(); data != memory_content.end();data++){
+                if(data->first != address) continue;
+                int pomeraj = (section.get_base() + sym.get_value()) - address + 2; //with offset to that symbol
+                std::stringstream ss;
+                ss << std::hex <<((pomeraj>>8)&0xf);
+                data->second[1] = ss.str()[0];
+                ss.str("");
+                ss.clear();
+                ss << std::hex << ((pomeraj>>4)&0xf) << ((pomeraj)&0xf);
+                data++;
+                if(data!=memory_content.end())data->second = ss.str();
             }
         }
+        tbd.push_back(sym.get_name()); //add entry to vector that holds name of keys that should be deleted
+    }
+    for(auto key:tbd){
+        symbols_jump_flink.erase(key);//delete all entries with resolved symbols  
     }
 
-    for(auto sym_name :tbd){
-        symbols_flink.erase(sym_name); //delete all entries with resolved symbols
+    for(auto sym: symbols_jump_flink){
+        symbols_flink[sym.first].insert(symbols_flink[sym.first].end(), sym.second.begin(), sym.second.end()); //add unresolved to sym flink
     }
 }
 
