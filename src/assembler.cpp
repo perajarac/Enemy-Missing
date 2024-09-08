@@ -154,7 +154,7 @@ void Assembler::mk_call(std::string ident){
         add_symbol(new_sym);
     }
 
-    symbols_flink[ident].push_back(current_address);
+    symbols_jump_flink[ident].push_back(current_address);
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
 }
@@ -278,7 +278,16 @@ void Assembler::resolve_jump(){
                 ss.str("");
                 ss.clear();
                 ss << std::hex << ((pomeraj>>4)&0xf) << ((pomeraj)&0xf);
-                data++;
+                data++; 
+                if((data-3)->second[0] == '3'){ //for jump ins
+                    char op_code = (data-3)->second[1];
+                    int num = (op_code >= 'a') ? (op_code - 'a' + 10) : (op_code - '0');  // Convert hex char to int
+                    (data-3)->second[1] = num - 8 + '0';
+                    
+                }else{
+                    (data-3)->second[1] = '0'; //for call ins
+                }
+
                 if(data!=memory_content.end())data->second = ss.str();
             }
         }
@@ -842,15 +851,21 @@ void Assembler::write_section_context(){
 void Assembler::write_memory_content(){
     ass_output.open(output_file,std::ios::app);
     ass_output << "------------Section tables-----------\n";
-    for(unsigned current_address = 0;current_address < memory_content.size();current_address++){
+    for(unsigned current_address = 0;current_address < memory_content.size();current_address+=4){
         if(current_address % 8 == 0){
             if(current_address!=0)ass_output << "\n";
             std::stringstream ss;
             ss << std::hex << current_address << ":";
             ass_output << ss.str();
-            ass_output << "\t" << memory_content[current_address].second;
+            ass_output << "\t" << memory_content[current_address + 3].second;
+            ass_output << "\t" << memory_content[current_address + 2].second;
+            ass_output << "\t" << memory_content[current_address + 1].second;
+            ass_output << "\t" << memory_content[current_address + 0].second;
         }else{   
-            ass_output << "\t" << memory_content[current_address].second;
+            ass_output << "\t" << memory_content[current_address + 3].second;
+            ass_output << "\t" << memory_content[current_address + 2].second;
+            ass_output << "\t" << memory_content[current_address + 1].second;
+            ass_output << "\t" << memory_content[current_address + 0].second;
         }
     }
     ass_output << "\n-------------------------------------\n";
