@@ -31,10 +31,12 @@ int main(int argc, char* argv[]) {
     } while(!feof(yyin));
 
 	Assembler::end_last_section();
+	Assembler::local_sym_errors();
 	if(Assembler::ass_end == false){
 		Assembler::write_section_context();
 		Assembler::write_symbol_table_context();
 		Assembler::write_memory_content();
+		Assembler::write_realoc();
 	}
 
 	fclose(file);

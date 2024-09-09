@@ -18,7 +18,6 @@ std::unordered_map<std::string, std::vector<int>> Assembler::relocation_table;
 
 std::ofstream  Assembler::ass_output;
 int Assembler::current_address = 0;
-unsigned Assembler::location_counter = 0;
 
 void Assembler::set_output(std::string output){
     output_file = output;
@@ -104,15 +103,12 @@ void Assembler::handle_instruction(instruction op_code, std::vector<int> operand
             break;
     }
 
-    location_counter+=4;
-
 }
 
 
 void Assembler::handle_skip(unsigned bytes){          
     for(int i = 0;i<bytes;i++){
         memory_content.push_back(std::make_pair(current_address++, "00"));
-        location_counter++;
     }  
 }
 
@@ -138,8 +134,8 @@ void Assembler::arithmetic_operation(const std::string& arithmetic_code, const s
 }
 
 void Assembler::mk_iret(){
-    pop(15,false);
     pop(0, true);
+    pop(15,false);
 }
 
 void Assembler::mk_call(std::string ident){
@@ -282,10 +278,10 @@ void Assembler::resolve_jump(){
                 if((data-3)->second[0] == '3'){ //for jump ins
                     char op_code = (data-3)->second[1];
                     int num = (op_code >= 'a') ? (op_code - 'a' + 10) : (op_code - '0');  // Convert hex char to int
-                    (data-3)->second[1] = num - 8 + '0';
+                    (data-3)->second[1] = num - 8 + '0'; //change op code to be without mem[]
                     
                 }else{
-                    (data-3)->second[1] = '0'; //for call ins
+                    (data-3)->second[1] = '0'; //for call ins change op code to be without mem[]
                 }
 
                 if(data!=memory_content.end())data->second = ss.str();
@@ -325,7 +321,6 @@ void Assembler::handle_sys_regr(std::string& op_code, unsigned reg){
 
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
-    location_counter+=4;
 
 }
 
@@ -338,7 +333,6 @@ void Assembler::handle_sys_regw(std::string& op_code, unsigned reg){
 
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
-    location_counter+=4;
 
 }
 
@@ -851,21 +845,15 @@ void Assembler::write_section_context(){
 void Assembler::write_memory_content(){
     ass_output.open(output_file,std::ios::app);
     ass_output << "------------Section tables-----------\n";
-    for(unsigned current_address = 0;current_address < memory_content.size();current_address+=4){
+    for(unsigned current_address = 0;current_address < memory_content.size();current_address++){
         if(current_address % 8 == 0){
             if(current_address!=0)ass_output << "\n";
             std::stringstream ss;
             ss << std::hex << current_address << ":";
             ass_output << ss.str();
-            ass_output << "\t" << memory_content[current_address + 3].second;
-            ass_output << "\t" << memory_content[current_address + 2].second;
-            ass_output << "\t" << memory_content[current_address + 1].second;
-            ass_output << "\t" << memory_content[current_address + 0].second;
+            ass_output << "\t" << memory_content[current_address].second;
         }else{   
-            ass_output << "\t" << memory_content[current_address + 3].second;
-            ass_output << "\t" << memory_content[current_address + 2].second;
-            ass_output << "\t" << memory_content[current_address + 1].second;
-            ass_output << "\t" << memory_content[current_address + 0].second;
+            ass_output << "\t" << memory_content[current_address].second;
         }
     }
     ass_output << "\n-------------------------------------\n";
@@ -895,6 +883,25 @@ void Assembler::write_symbol_table_context() {
 
     ass_output << "---------------------------------------------\n";
     ass_output.close();
+}
+
+void Assembler::write_realoc(){
+    ass_output.open(output_file, std::ios::app);
+    ass_output << "----------------Reloc Table----------------\n";
+    
+    ass_output << std::left << std::setw(20) << "Symbol:" 
+               << std::setw(10) << "Addresses:" << "\n";
+    for (const auto& sym : relocation_table) {
+        ass_output << std::left << std::setw(20) << sym.first;
+        for(auto address: sym.second){
+            ass_output << std::left << std::setw(10) << std::hex << address;
+        }
+        ass_output << "\n";
+    }
+
+    ass_output << "---------------------------------------------\n";
+    ass_output.close();
+    
 }
 
 void Assembler::add_literal_pool_to_memory(){
@@ -958,4 +965,14 @@ void Assembler::wlitims(int literal, int reg){
 
     memory_content.push_back(std::make_pair(current_address++, first_part));
     memory_content.push_back(std::make_pair(current_address++, second_part));
+}
+
+
+void Assembler::local_sym_errors(){
+    for(auto sym: sym_table){
+        if((sym.get_bind() == bind_type::LOC || sym.get_bind() == bind_type::GLO) && sym.get_section_name() == "UND"){
+            std::cout << "Error, symbol " << sym.get_name() << " is not defined\n";
+            ass_end = true;
+        }
+    }
 }
