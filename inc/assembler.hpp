@@ -1,17 +1,7 @@
 #ifndef _assembler_hpp_
 #define _assembler_hpp_
 
-#include <string>
-#include <vector>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <memory>
-#include <unordered_map>
-#include <algorithm>
-#include <unordered_set>
-#include <map>
+#include "../inc/common.hpp"
 //tabelea simbola, tabela sekcija, relokaciona tabela
 
 class Assembler{
@@ -28,49 +18,6 @@ public:
         GLOBAL, EXTERN, SECTION, WORD, SKIP, ASCII, END
     };
 
-    enum address_type {
-        INDIRECT_ADDRESSING, IND
-    };
-
-    enum bind_type {LOC, GLO, EXT};
-
-    struct symbol{
-        std::size_t _num;
-        int _value;
-        bind_type _bind;
-        std::string _section_name;
-        std::string _name;
-
-        symbol(std::size_t num, int value, bind_type bind, std::string section_name, const std::string& name)
-        : _num(num), _value(value), _bind(bind), _section_name(section_name), _name(name) {}  
-
-        unsigned get_num() const;
-        int get_value() const;
-        bind_type get_bind() const;
-        std::string get_section_name() const;
-        std::string get_name() const;
-
-        void set_num(unsigned num);
-        void set_value(unsigned value);
-        void set_bind(bind_type bind);
-        void set_section_name(const std::string sec_name);
-        void set_name(const std::string name);
-        
-    };
-    struct section{
-        std::string _name;
-        unsigned _base;
-        unsigned _length;
-
-        section(const std::string& name, unsigned base)
-        : _name(name), _base(base) {}
-
-        unsigned get_length() const;
-        unsigned get_base() const;
-        std::string get_name() const;
-
-        void set_length(unsigned length);
-    };
     struct literal_pool{
         unsigned _base;
         std::vector<int> literals;
@@ -157,6 +104,8 @@ public:
 
     static void local_sym_errors();
 
+
+
 private:
     //helper functions
     static void arithmetic_operation(const std::string& arithmetic_code, const std::vector<int>& operands);
@@ -168,6 +117,10 @@ private:
     static void wregim(int opr_reg, int reg);
     static void putlitip(int literal, int reg);
     static void wlitims(int literal, int reg);
+
+    static std::map<int, int> ascii_map; //maps occuring of ascii, helper strcuture to ensure that writing in memmory is  good
+
+    static int lit_pool_base_address;
 
     static std::string output_file;
 

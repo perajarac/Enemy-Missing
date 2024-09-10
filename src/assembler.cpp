@@ -4,8 +4,10 @@
 std::string Assembler::output_file;
 bool Assembler::ass_end = false;
 
-std::vector<Assembler::section> Assembler::section_tables;
-std::vector<Assembler::symbol> Assembler::sym_table;
+int Assembler::lit_pool_base_address = 0;
+std::map<int, int> Assembler::ascii_map;
+std::vector<section> Assembler::section_tables;
+std::vector<symbol> Assembler::sym_table;
 std::vector<std::pair<int, std::string>> Assembler::memory_content;
 
 std::unordered_map<std::string, std::vector<int>> Assembler::symbols_flink;
@@ -103,13 +105,16 @@ void Assembler::handle_instruction(instruction op_code, std::vector<int> operand
             break;
     }
 
+
 }
 
 
-void Assembler::handle_skip(unsigned bytes){          
+void Assembler::handle_skip(unsigned bytes){
+    ascii_map[current_address] = bytes;          
     for(int i = 0;i<bytes;i++){
         memory_content.push_back(std::make_pair(current_address++, "00"));
-    }  
+    }
+
 }
 
 void Assembler::add_symbol(const symbol& sym){
@@ -153,6 +158,7 @@ void Assembler::mk_call(std::string ident){
     symbols_jump_flink[ident].push_back(current_address);
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
+
 }
 
 void Assembler::mk_call(int literal){
@@ -334,6 +340,7 @@ void Assembler::handle_sys_regw(std::string& op_code, unsigned reg){
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
 
+
 }
 
 bool Assembler::sym_exist(const std::string& sym_name){
@@ -383,6 +390,7 @@ void Assembler::handle_word(const std::string& sym_name){
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
+
 }
 
 
@@ -397,7 +405,7 @@ void Assembler::handle_word(unsigned literal) {
 }
 
 void Assembler::handle_ascii(std::string& ascii){
-    std::reverse(ascii.begin(), ascii.end());
+    ascii_map[current_address] = ascii.size();
     for(const auto& c:ascii){
         unsigned byte = c;
         std::stringstream ss;
@@ -750,65 +758,6 @@ void Assembler::resolve_literal_flink(){
 
 
 //------------------------------------ Helper functions ---------------------------------------
-unsigned Assembler::symbol::get_num() const {
-    return _num;
-}
-
-int Assembler::symbol::get_value() const {
-    return _value;
-}
-
-
-
-Assembler::bind_type Assembler::symbol::get_bind() const {
-    return _bind;
-}
-
-std::string Assembler::symbol::get_name() const {
-    return _name;
-}
-
-void Assembler::symbol::set_num(unsigned num) {
-    _num = num;
-}
-
-void Assembler::symbol::set_value(unsigned value) {
-    _value = value;
-}
-
-
-void Assembler::symbol::set_bind(bind_type bind) {
-    _bind = bind;
-}
-
-std::string Assembler::symbol::get_section_name() const {
-    return _section_name;
-}
-
-void Assembler::symbol::set_section_name(const std::string section_name) {
-    _section_name = section_name;
-}
-
-
-void Assembler::symbol::set_name(const std::string name) {
-    _name = name;
-}
-
-unsigned Assembler::section::get_length() const {
-    return _length;
-}
-
-unsigned Assembler::section::get_base() const {
-    return _base;
-}
-
-std::string Assembler::section::get_name() const {
-    return _name;
-}
-
-void Assembler::section::set_length(unsigned length) {
-    _length = length;
-}
 
 int Assembler::sym_index(const std::string& ident){
     int index = -1;
@@ -830,14 +779,16 @@ void Assembler::write_section_context(){
     
     ass_output << std::left << std::setw(15) << "Name:" 
                << std::setw(15) << "Start:" 
-               << std::setw(15) << "Size:" << "\n";
+               << std::setw(15) << "Size:" 
+               << std::setw(15) << "Lit pool adrr:" << "\n";
 
     for(const auto& i : section_tables){
 
         ass_output << std::left << std::setw(15) << i.get_name() 
                    << std::setw(15);
         ass_output << std::hex << i.get_base();
-        ass_output << std::setw(15) << std::hex << i.get_length() << "\n";
+        ass_output << std::setw(15) << std::hex << i.get_length();
+        ass_output << std::setw(15) << std::hex << i.get_lit_pool_base() << "\n";
     }
 
     ass_output << "-------------------------------------\n";
@@ -845,43 +796,63 @@ void Assembler::write_section_context(){
 }
 
 void Assembler::write_memory_content(){
-    int literal_pool_base = section_tables.back().get_base() + section_tables.back().get_length();
-    std::cout << std::hex << literal_pool_base;
+    std::map<int,int> lit_pool_base_addreses;
+    for(auto s:section_tables){ 
+        if(s.get_lit_pool_base()!=0 && s.get_length()!=0) lit_pool_base_addreses[s.get_lit_pool_base()] = s.get_length() - s.get_lit_pool_base(); //map of start of lit_pool and its length
+    }
+    auto lpba_it = lit_pool_base_addreses.begin();
+    int n = memory_content.size();
     ass_output.open(output_file,std::ios::app);
     ass_output << "------------Section tables-----------\n";
-    for(unsigned current_address = 0;current_address < memory_content.size();){
+    for(int current_address = 0;current_address < n;){
+
+        if(lpba_it != lit_pool_base_addreses.end() && lpba_it->second != 0){ //prints literal pool
+            if(current_address >= lpba_it->first){
+                for(int i = 0; i<lpba_it->second;i++){
+                    if(current_address % 8 == 0){
+                        ass_output << "\n";
+                        std::stringstream ss;
+                        ss << std::hex << current_address << ":";
+                        ass_output << ss.str();
+                    }               
+                    ass_output << "\t" << memory_content[current_address++].second;
+                }
+                lpba_it++;
+                continue;
+            }
+        }
+
+        auto it = ascii_map.find(current_address);//prints ascii or skip properly
+        if(it != ascii_map.end()){
+            for(int i = 0; i<it->second;i++){
+                if(current_address % 8 == 0){
+                    ass_output << "\n";
+                    std::stringstream ss;
+                    ss << std::hex << current_address << ":";
+                    ass_output << ss.str();
+                }               
+                ass_output << "\t" << memory_content[current_address++].second;
+            }
+            continue;
+        }
+
         if(current_address % 8 == 0){
             if(current_address!=0)ass_output << "\n";
             std::stringstream ss;
             ss << std::hex << current_address << ":";
             ass_output << ss.str();
-            if(current_address>literal_pool_base){
-                std::cout << std::hex << literal_pool_base << std::endl;
-                ass_output << "\t" << memory_content[current_address].second;
-                current_address++;
-                continue;
-            }
-            ass_output << "\t" << memory_content[current_address+3].second;
-            ass_output << "\t" << memory_content[current_address+2].second;
-            ass_output << "\t" << memory_content[current_address+1].second;
-            ass_output << "\t" << memory_content[current_address].second;
-            current_address += 4;
-        }else{   
-            if(current_address>=literal_pool_base){
-                ass_output << "\t" << memory_content[current_address].second;
-                current_address++;
-                continue;
-            }
-            ass_output << "\t" << memory_content[current_address+3].second;
-            ass_output << "\t" << memory_content[current_address+2].second;
-            ass_output << "\t" << memory_content[current_address+1].second;
-            ass_output << "\t" << memory_content[current_address].second;
-            current_address += 4;
         }
+        ass_output << "\t" << memory_content[current_address+3].second; //prints instruction
+        ass_output << "\t" << memory_content[current_address+2].second;
+        ass_output << "\t" << memory_content[current_address+1].second;
+        ass_output << "\t" << memory_content[current_address].second;
+        current_address += 4;
     }
+
     ass_output << "\n-------------------------------------\n";
     ass_output.close();
 }
+
 
 
 void Assembler::write_symbol_table_context() {
@@ -929,6 +900,7 @@ void Assembler::write_realoc(){
 
 void Assembler::add_literal_pool_to_memory(){
     lit_pool.set_base(current_address);
+    section_tables.back().set_lit_pool_base(current_address);
     std::unordered_set<decltype(lit_pool.literals)::value_type> processed;
 
     for (const auto& i : lit_pool.literals) {
@@ -993,7 +965,7 @@ void Assembler::wlitims(int literal, int reg){
 
 void Assembler::local_sym_errors(){
     for(auto sym: sym_table){
-        if((sym.get_bind() == bind_type::LOC || sym.get_bind() == bind_type::GLO) && sym.get_section_name() == "UND"){
+        if((sym.get_bind() == bind_type::LOC) && sym.get_section_name() == "UND"){
             std::cout << "Error, symbol " << sym.get_name() << " is not defined\n";
             ass_end = true;
         }

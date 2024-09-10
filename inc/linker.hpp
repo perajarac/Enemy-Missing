@@ -1,17 +1,9 @@
     #ifndef _linker_hpp_
     #define _linker_hpp_
 
-    #include <string>
-    #include <vector>
-    #include <sstream>
-    #include <iostream>
-    #include <fstream>
-    #include <iomanip>
-    #include <memory>
-    #include <unordered_map>
-    #include <algorithm>
-    #include <unordered_set>
-    #include <map>
+#include "../inc/common.hpp"
+
+
 
 
 class Linker{
@@ -24,7 +16,12 @@ public:
 
 
 
+
+
 private:
+    static std::map<int, std::string> memory_content;
+
+
     static std::vector<std::pair<std::string,std::string>> place_sections;
     static std::vector<std::string> input_files;
     static std::string output_file;

@@ -139,23 +139,23 @@
 	global_list
 		: TOKEN_IDENT {
 			std::string ident = $1;
-			Assembler::handle_bind_type(Assembler::bind_type::GLO, ident);
+			Assembler::handle_bind_type(bind_type::GLO, ident);
 		}
 		| global_list TOKEN_COMMA TOKEN_IDENT {
 			std::string ident = $3;
-			Assembler::handle_bind_type(Assembler::bind_type::GLO, ident);
+			Assembler::handle_bind_type(bind_type::GLO, ident);
 		}
 		;
 
 	extern_list
 		: TOKEN_IDENT {
 			std::string ident = $1;	
-			Assembler::handle_bind_type(Assembler::bind_type::EXT, ident);
+			Assembler::handle_bind_type(bind_type::EXT, ident);
 			
 		}
 		| extern_list TOKEN_COMMA TOKEN_IDENT {
 			std::string ident = $3;
-			Assembler::handle_bind_type(Assembler::bind_type::EXT, ident);
+			Assembler::handle_bind_type(bind_type::EXT, ident);
 		}
 		;
 

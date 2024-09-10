@@ -121,7 +121,6 @@ unknown .
 
 {comment} {}
 [ \t\n]+
-{enter} {line_number++;}
 {ident} {yylval.ident = strdup(yytext); return TOKEN_IDENT;}
 
 {string} {yylval.ident = strdup(yytext); return TOKEN_STRING; }
