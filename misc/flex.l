@@ -44,7 +44,6 @@ csrrd csrrd
 csrwr csrwr
 
 comment #.*$
-wspace \s*
 string \"[a-zA-Z0-9_ ]*\"
 enter \n
 digit [0-9]+
@@ -120,9 +119,9 @@ unknown .
 {dt} { return (TOKEN_COLON); }
 {z}     { return (TOKEN_COMMA); }
 
-{comment} { }
-{wspace}        {  }
-{enter} {line_number++; }
+{comment} {}
+[ \t\n]+
+{enter} {line_number++;}
 {ident} {yylval.ident = strdup(yytext); return TOKEN_IDENT;}
 
 {string} {yylval.ident = strdup(yytext); return TOKEN_STRING; }

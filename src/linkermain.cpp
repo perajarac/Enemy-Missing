@@ -73,19 +73,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // // Output parsed information
-    // std::cout << "First argument: " << first_arg << std::endl;
-    // std::cout << "Output file: " << output_file << std::endl;
-    
-    // std::cout << "Section placements:\n";
-    // for (const auto& section : sections) {
-    //     std::cout << "  Section: " << section.first << " at address " << section.second << std::endl;
-    // }
-
-    // std::cout << "Input files:\n";
-    // for (const auto& input_file : input_files) {
-    //     std::cout << "  " << input_file << std::endl;
-    // }
     Linker::set_output(output_file);
     Linker::set_input(input_files);
     Linker::set_place_sections(sections);

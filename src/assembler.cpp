@@ -397,12 +397,41 @@ void Assembler::handle_word(unsigned literal) {
 }
 
 void Assembler::handle_ascii(std::string& ascii){
+    std::reverse(ascii.begin(), ascii.end());
     for(const auto& c:ascii){
         unsigned byte = c;
         std::stringstream ss;
         ss << std::hex << std::setw(2) << std::setfill('0') << std::hex<< byte;
         memory_content.push_back(std::make_pair(current_address++, ss.str()));
     }
+}
+
+void Assembler::pop(int reg, bool csr){
+    if(csr){
+        memory_content.push_back(std::make_pair(current_address++, "97"));
+    }else{
+        memory_content.push_back(std::make_pair(current_address++, "93"));
+    }
+    std::stringstream ss;
+    ss << std::hex << reg << 14;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    memory_content.push_back(std::make_pair(current_address++, "00"));
+    memory_content.push_back(std::make_pair(current_address++, "04"));
+}
+
+void Assembler::push(int reg){
+    memory_content.push_back(std::make_pair(current_address++, "81"));
+    std::stringstream ss;
+    ss << std::hex << 14 << 0;
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    ss.str("");
+    ss.clear();
+    ss << std::hex << reg <<((-4>>8)&0xf);
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
+    ss.str("");
+    ss.clear();
+    ss << std::hex << ((-4>>4)&0xf) << ((-4)&0xf);
+    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2))); 
 }
 
 //------------------------------LOAD INSTRUCTION------------------------------------------
@@ -465,33 +494,6 @@ void Assembler::mem_ind_register(int opr_reg, int reg){
     wregim(opr_reg, reg);
 }
 
-void Assembler::pop(int reg, bool csr){
-    if(csr){
-        memory_content.push_back(std::make_pair(current_address++, "97"));
-    }else{
-        memory_content.push_back(std::make_pair(current_address++, "93"));
-    }
-    std::stringstream ss;
-    ss << std::hex << reg << 14;
-    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-    memory_content.push_back(std::make_pair(current_address++, "00"));
-    memory_content.push_back(std::make_pair(current_address++, "04"));
-}
-
-void Assembler::push(int reg){
-    memory_content.push_back(std::make_pair(current_address++, "81"));
-    std::stringstream ss;
-    ss << std::hex << 14 << 0;
-    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-    ss.str("");
-    ss.clear();
-    ss << std::hex << reg <<((-4>>8)&0xf);
-    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));
-    ss.str("");
-    ss.clear();
-    ss << std::hex << ((-4>>4)&0xf) << ((-4)&0xf);
-    memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2))); 
-}
 
 //-----------------------------symbol as operand-----------------------------------------
 void Assembler::mem_imm_symbol(std::string ident, int reg){
@@ -843,17 +845,38 @@ void Assembler::write_section_context(){
 }
 
 void Assembler::write_memory_content(){
+    int literal_pool_base = section_tables.back().get_base() + section_tables.back().get_length();
+    std::cout << std::hex << literal_pool_base;
     ass_output.open(output_file,std::ios::app);
     ass_output << "------------Section tables-----------\n";
-    for(unsigned current_address = 0;current_address < memory_content.size();current_address++){
+    for(unsigned current_address = 0;current_address < memory_content.size();){
         if(current_address % 8 == 0){
             if(current_address!=0)ass_output << "\n";
             std::stringstream ss;
             ss << std::hex << current_address << ":";
             ass_output << ss.str();
+            if(current_address>literal_pool_base){
+                std::cout << std::hex << literal_pool_base << std::endl;
+                ass_output << "\t" << memory_content[current_address].second;
+                current_address++;
+                continue;
+            }
+            ass_output << "\t" << memory_content[current_address+3].second;
+            ass_output << "\t" << memory_content[current_address+2].second;
+            ass_output << "\t" << memory_content[current_address+1].second;
             ass_output << "\t" << memory_content[current_address].second;
+            current_address += 4;
         }else{   
+            if(current_address>=literal_pool_base){
+                ass_output << "\t" << memory_content[current_address].second;
+                current_address++;
+                continue;
+            }
+            ass_output << "\t" << memory_content[current_address+3].second;
+            ass_output << "\t" << memory_content[current_address+2].second;
+            ass_output << "\t" << memory_content[current_address+1].second;
             ass_output << "\t" << memory_content[current_address].second;
+            current_address += 4;
         }
     }
     ass_output << "\n-------------------------------------\n";
