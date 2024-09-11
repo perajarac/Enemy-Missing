@@ -1,7 +1,8 @@
 #include "../inc/assembler.hpp"
 
 
-std::string Assembler::output_file;
+std::string Assembler::output_file_txt;
+std::string Assembler::output_file_obj;
 bool Assembler::ass_end = false;
 
 int Assembler::lit_pool_base_address = 0;
@@ -19,10 +20,15 @@ Assembler::literal_pool Assembler::lit_pool;
 std::unordered_map<std::string, std::vector<int>> Assembler::relocation_table;
 
 std::ofstream  Assembler::ass_output;
+std::ofstream  Assembler::ass_obj_output;
 int Assembler::current_address = 0;
 
 void Assembler::set_output(std::string output){
-    output_file = output;
+    output_file_obj = output;
+    output_file_txt = output;
+
+    size_t dot_pos = output_file_txt.rfind(".o");
+    output_file_txt.replace(dot_pos, 2, ".txt");
 }
 
 void Assembler::make_section(std::string& section_name){
@@ -773,7 +779,7 @@ int Assembler::sym_index(const std::string& ident){
 
 
 void Assembler::write_section_context(){
-    ass_output.open(output_file, std::ios::app);
+    ass_output.open(output_file_txt, std::ios::app);
     ass_output << "----------Table of sections----------\n";
     
     
@@ -802,7 +808,7 @@ void Assembler::write_memory_content(){
     }
     auto lpba_it = lit_pool_base_addreses.begin();
     int n = memory_content.size();
-    ass_output.open(output_file,std::ios::app);
+    ass_output.open(output_file_txt,std::ios::app);
     ass_output << "------------Section tables-----------\n";
     for(int current_address = 0;current_address < n;){
 
@@ -856,7 +862,7 @@ void Assembler::write_memory_content(){
 
 
 void Assembler::write_symbol_table_context() {
-    ass_output.open(output_file, std::ios::app);
+    ass_output.open(output_file_txt, std::ios::app);
     ass_output << "----------------Symbol Table----------------\n";
     
     ass_output << std::left << std::setw(10) << "Num:" 
@@ -880,7 +886,7 @@ void Assembler::write_symbol_table_context() {
 }
 
 void Assembler::write_realoc(){
-    ass_output.open(output_file, std::ios::app);
+    ass_output.open(output_file_txt, std::ios::app);
     ass_output << "----------------Reloc Table----------------\n";
     
     ass_output << std::left << std::setw(20) << "Symbol:" 
@@ -896,6 +902,80 @@ void Assembler::write_realoc(){
     ass_output << "---------------------------------------------\n";
     ass_output.close();
     
+}
+
+void Assembler::write_object_file(){
+    ass_obj_output.open(output_file_obj, std::ios::binary | std::ios::out);
+
+    //writes sections content in obj file
+    int section_table_size = section_tables.size();
+    ass_obj_output.write((char*)(&section_table_size), sizeof(section_table_size));
+    for(const auto& section : section_tables){
+        std::string sec_name = section.get_name();
+        int name_len = sec_name.size();
+        ass_obj_output.write((char*)&name_len, sizeof(name_len));
+        for(int j = 0; j < name_len; j++) {
+            char c = sec_name[j];
+            ass_obj_output.write((char*)(&c), sizeof(c));
+        }
+        ass_obj_output.write((char*)&section._base, sizeof(section._base));
+        ass_obj_output.write((char*)&section._length, sizeof(section._length));
+        ass_obj_output.write((char*)&section._lit_pool_base, sizeof(section._lit_pool_base));
+    }
+    
+    // Write Symbol Table
+    int symbol_table_size = sym_table.size();
+    ass_obj_output.write((char*)(&symbol_table_size), sizeof(symbol_table_size));
+    for(const auto& symbol : sym_table){
+        std::string sym_name = symbol.get_name();
+        int name_len = sym_name.size();
+        ass_obj_output.write((char*)&name_len, sizeof(name_len));
+        for(int j = 0; j < name_len; j++) {
+            char c = sym_name[j];
+            ass_obj_output.write((char*)(&c), sizeof(c));
+        }
+        ass_obj_output.write((char*)&symbol._value, sizeof(symbol._value));
+        ass_obj_output.write((char*)&symbol._bind, sizeof(symbol._bind));
+
+        std::string section_name = symbol.get_section_name();
+        name_len = section_name.size();
+        ass_obj_output.write((char*)&name_len, sizeof(name_len));
+        for(int j = 0; j < name_len; j++) {
+            char c = section_name[j];
+            ass_obj_output.write((char*)(&c), sizeof(c));
+        }
+        // Other symbol data
+    }
+    
+    int reloc_table_size = relocation_table.size();
+    ass_obj_output.write((char*)(&reloc_table_size), sizeof(reloc_table_size));
+    // Write Relocation Table
+    for(const auto& relocation : relocation_table){
+        std::string sym_name = relocation.first;
+        int name_len = sym_name.size();
+        ass_obj_output.write((char*)&name_len, sizeof(name_len));
+        for(int j = 0; j < name_len; j++) {
+            char c = sym_name[j];
+            ass_obj_output.write((char*)(&c), sizeof(c));
+        }
+        int reloc_len = relocation.second.size();
+        ass_obj_output.write((char*)&reloc_len, sizeof(reloc_len));
+        for(const auto& address : relocation.second){
+            ass_obj_output.write((char*)&address, sizeof(address));
+        }
+    }
+
+    int memory_content_size = memory_content.size();
+    ass_obj_output.write((char*)(&memory_content_size), sizeof(memory_content_size));
+    // Write Relocation Table
+    for(const auto& [address, content] : memory_content){
+        for(int j = 0; j < 2; j++) {
+            char c = content[j];
+            ass_obj_output.write((char*)(&c), sizeof(c));
+        }
+    }
+
+    ass_obj_output.close();
 }
 
 void Assembler::add_literal_pool_to_memory(){

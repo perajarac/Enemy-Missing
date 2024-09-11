@@ -37,6 +37,7 @@ int main(int argc, char* argv[]) {
 		Assembler::write_symbol_table_context();
 		Assembler::write_memory_content();
 		Assembler::write_realoc();
+		Assembler::write_object_file();
 	}
 
 	fclose(file);

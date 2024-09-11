@@ -52,6 +52,8 @@ public:
 
     static void add_symbol(const symbol& sym);
 
+    static void write_object_file();
+
     static void write_memory_content();
 
     static void write_realoc();
@@ -122,9 +124,12 @@ private:
 
     static int lit_pool_base_address;
 
-    static std::string output_file;
+    static std::string output_file_txt;
+    static std::string output_file_obj;
 
     static std::ofstream ass_output;
+
+    static std::ofstream ass_obj_output;
 
     static int current_address;
 

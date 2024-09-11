@@ -1,0 +1,108 @@
+----------Table of sections----------
+Name:          Start:         Size:          Lit pool adrr: 
+my_code        0              38             28             
+my_data        38             4              0              
+-------------------------------------
+----------------Symbol Table----------------
+Num:      Value:    Bind:          Section:       Name:          
+0         UND       GLO            UND            handler        
+1         0         GLO            my_code        my_start       
+2         0         GLO            my_data        my_counter     
+3         14        LOC            my_code        wait           
+---------------------------------------------
+------------Section tables-----------
+0:	28	00	ef	92	30	00	1f	92
+8:	00	00	11	94	01	00	10	91
+10:	1c	10	0f	82	1c	00	1f	92
+18:	00	00	11	92	14	00	20	91
+20:	f4	2f	f1	32	00	00	00	00
+28:	fe	fe	ff	ff	10	ff	ff	ff
+30:	00	00	00	00	00	00	00	00
+38:	00	00	00	00
+-------------------------------------
+----------------Reloc Table----------------
+Symbol:             Addresses:
+handler             34        
+my_counter          30        
+---------------------------------------------
+----------Table of sections----------
+Name:          Start:         Size:          Lit pool adrr: 
+my_code        0              38             28             
+my_data        38             4              0              
+-------------------------------------
+----------------Symbol Table----------------
+Num:      Value:    Bind:          Section:       Name:          
+0         UND       GLO            UND            handler        
+1         0         GLO            my_code        my_start       
+2         0         GLO            my_data        my_counter     
+3         14        LOC            my_code        wait           
+---------------------------------------------
+------------Section tables-----------
+0:	28	00	ef	92	30	00	1f	92
+8:	00	00	11	94	01	00	10	91
+10:	1c	10	0f	82	1c	00	1f	92
+18:	00	00	11	92	14	00	20	91
+20:	f4	2f	f1	32	00	00	00	00
+28:	fe	fe	ff	ff	10	ff	ff	ff
+30:	00	00	00	00	00	00	00	00
+38:	00	00	00	00
+-------------------------------------
+----------------Reloc Table----------------
+Symbol:             Addresses:
+handler             34        
+my_counter          30        
+---------------------------------------------
+----------Table of sections----------
+Name:          Start:         Size:          Lit pool adrr: 
+my_code        0              38             28             
+my_data        38             4              0              
+-------------------------------------
+----------------Symbol Table----------------
+Num:      Value:    Bind:          Section:       Name:          
+0         UND       GLO            UND            handler        
+1         0         GLO            my_code        my_start       
+2         0         GLO            my_data        my_counter     
+3         14        LOC            my_code        wait           
+---------------------------------------------
+------------Section tables-----------
+0:	28	00	ef	92	30	00	1f	92
+8:	00	00	11	94	01	00	10	91
+10:	1c	10	0f	82	1c	00	1f	92
+18:	00	00	11	92	14	00	20	91
+20:	f4	2f	f1	32	00	00	00	00
+28:	fe	fe	ff	ff	10	ff	ff	ff
+30:	00	00	00	00	00	00	00	00
+38:	00	00	00	00
+-------------------------------------
+----------------Reloc Table----------------
+Symbol:             Addresses:
+handler             34        
+my_counter          30        
+---------------------------------------------
+----------Table of sections----------
+Name:          Start:         Size:          Lit pool adrr: 
+my_code        0              38             28             
+my_data        38             4              0              
+-------------------------------------
+----------------Symbol Table----------------
+Num:      Value:    Bind:          Section:       Name:          
+0         UND       GLO            UND            handler        
+1         0         GLO            my_code        my_start       
+2         0         GLO            my_data        my_counter     
+3         14        LOC            my_code        wait           
+---------------------------------------------
+------------Section tables-----------
+0:	28	00	ef	92	30	00	1f	92
+8:	00	00	11	94	01	00	10	91
+10:	1c	10	0f	82	1c	00	1f	92
+18:	00	00	11	92	14	00	20	91
+20:	f4	2f	f1	32	00	00	00	00
+28:	fe	fe	ff	ff	10	ff	ff	ff
+30:	00	00	00	00	00	00	00	00
+38:	00	00	00	00
+-------------------------------------
+----------------Reloc Table----------------
+Symbol:             Addresses:
+handler             34        
+my_counter          30        
+---------------------------------------------
