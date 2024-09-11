@@ -77,5 +77,7 @@ int main(int argc, char* argv[]) {
     Linker::set_input(input_files);
     Linker::set_place_sections(sections);
 
+    Linker::read_obj_files();
+
     return 0;
 }

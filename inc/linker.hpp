@@ -12,6 +12,8 @@ public:
     static void set_output(std::string out);
     static void set_place_sections(std::vector<std::pair<std::string,std::string>> place_sections);
 
+    static void read_obj_files();
+
 
 
 
@@ -19,6 +21,7 @@ public:
 
 
 private:
+    static std::vector<file> files_content;
     static std::map<int, std::string> memory_content;
 
 

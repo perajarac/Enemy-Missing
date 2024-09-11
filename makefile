@@ -47,4 +47,4 @@ src/linkermain.o: src/linkermain.cpp
 # Clean target
 clean:
 	@echo "Cleaning up..."
-	@rm -f asembler linker src/*.o src/flex.cpp src/parser.cpp src/parser.output assout.txt *.o
+	@rm -f asembler linker src/*.o src/flex.cpp src/parser.cpp src/parser.output assout.txt *.o *.txt

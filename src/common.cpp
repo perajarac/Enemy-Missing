@@ -65,3 +65,15 @@ unsigned section::get_lit_pool_base() const {
 void section::set_lit_pool_base(unsigned lit_pool_base) {
     _lit_pool_base = lit_pool_base;
 }
+
+void file::add_section(section sec) {
+    section_tables.push_back(sec);
+}
+
+void file::add_symbol(symbol sym) {
+    sym_table.push_back(sym);
+}
+
+void file::add_reloc_table(const std::string& name, std::vector<int> addresses) {
+    relocation_table[name] = std::move(addresses);
+}

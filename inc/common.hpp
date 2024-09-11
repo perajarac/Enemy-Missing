@@ -22,8 +22,13 @@ struct section{
     unsigned _length;
     unsigned _lit_pool_base = 0;
 
+    section() = default;
+
     section(const std::string& name, unsigned base)
     : _name(name), _base(base) {}
+
+    section(std::string name, unsigned base, unsigned length, unsigned literal_pool_base)
+    :_name(name), _base(base), _length(length), _lit_pool_base(literal_pool_base) {}
 
     unsigned get_length() const;
     unsigned get_base() const;
@@ -32,6 +37,7 @@ struct section{
 
     void set_length(unsigned length);
     void set_lit_pool_base(unsigned lit_pool_base);
+
 };
 
 struct symbol{
@@ -41,8 +47,13 @@ struct symbol{
     std::string _section_name;
     std::string _name;
 
+    symbol() = default;
+
     symbol(std::size_t num, int value, bind_type bind, std::string section_name, const std::string& name)
     : _num(num), _value(value), _bind(bind), _section_name(section_name), _name(name) {}  
+
+    symbol(int value, bind_type bind, std::string section_name, const std::string& name)
+    : _value(value), _bind(bind), _section_name(section_name), _name(name) {}  
 
     unsigned get_num() const;
     int get_value() const;
@@ -56,6 +67,17 @@ struct symbol{
     void set_section_name(const std::string sec_name);
     void set_name(const std::string name);
     
+};
+
+struct file{
+    std::vector<section> section_tables;
+    std::vector<symbol> sym_table;
+    std::unordered_map<std::string, std::vector<int>> relocation_table;
+    std::vector<std::pair<int, std::string>> memory_content;
+
+    void add_section(section sec);
+    void add_symbol(symbol sym);
+    void add_reloc_table(const std::string& name, std::vector<int> addreses);
 };
 
 

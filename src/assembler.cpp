@@ -944,12 +944,11 @@ void Assembler::write_object_file(){
             char c = section_name[j];
             ass_obj_output.write((char*)(&c), sizeof(c));
         }
-        // Other symbol data
     }
     
+    // Write Relocation Table
     int reloc_table_size = relocation_table.size();
     ass_obj_output.write((char*)(&reloc_table_size), sizeof(reloc_table_size));
-    // Write Relocation Table
     for(const auto& relocation : relocation_table){
         std::string sym_name = relocation.first;
         int name_len = sym_name.size();
@@ -965,9 +964,9 @@ void Assembler::write_object_file(){
         }
     }
 
+    // Write mem content
     int memory_content_size = memory_content.size();
     ass_obj_output.write((char*)(&memory_content_size), sizeof(memory_content_size));
-    // Write Relocation Table
     for(const auto& [address, content] : memory_content){
         for(int j = 0; j < 2; j++) {
             char c = content[j];
