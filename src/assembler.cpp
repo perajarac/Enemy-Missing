@@ -319,6 +319,7 @@ void Assembler::end_last_section(){
     resovle_symbol_flink();
     symbols_flink.clear();
     literal_flink.clear();
+    symbols_jump_flink.clear();
     lit_pool.literals.clear();
     lit_pool.set_base(0);
     section_tables.back().set_length(current_address - section_tables.back().get_base());
@@ -673,7 +674,7 @@ void Assembler::handle_label(std::string ident){
 }
 
 void Assembler::resovle_symbol_flink(){
-    for(auto sym:symbols_flink){ //goes for every symbol
+    for(auto& sym:symbols_flink){ //goes for every symbol
         for(auto address:sym.second){ //for every address that is coresponding with that symbol
             for (auto it = memory_content.begin(); it != memory_content.end(); ++it) { //searching memmory to find one of the addresses that coresponds with symbol
                 if (it->first == address) { //if search is success adds offset to that symbol in literal pool
@@ -698,6 +699,7 @@ void Assembler::resovle_symbol_flink(){
             }
         }
         relocation_table[sym.first].push_back(current_address);
+        if(section_tables.back().get_lit_pool_base() == 0) section_tables.back().set_lit_pool_base(current_address);
         memory_content.push_back(std::make_pair(current_address++, "00"));
         memory_content.push_back(std::make_pair(current_address++, "00"));
         memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -979,7 +981,6 @@ void Assembler::write_object_file(){
 
 void Assembler::add_literal_pool_to_memory(){
     lit_pool.set_base(current_address);
-    section_tables.back().set_lit_pool_base(current_address);
     std::unordered_set<decltype(lit_pool.literals)::value_type> processed;
 
     for (const auto& i : lit_pool.literals) {

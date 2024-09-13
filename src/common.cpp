@@ -1,5 +1,7 @@
 #include "../inc/common.hpp"
 
+int symbol::id = 0;
+
 // symbol class member functions
 unsigned symbol::get_num() const {
     return _num;

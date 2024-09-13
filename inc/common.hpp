@@ -46,6 +46,7 @@ struct symbol{
     bind_type _bind;
     std::string _section_name;
     std::string _name;
+    static int id;
 
     symbol() = default;
 
@@ -53,7 +54,7 @@ struct symbol{
     : _num(num), _value(value), _bind(bind), _section_name(section_name), _name(name) {}  
 
     symbol(int value, bind_type bind, std::string section_name, const std::string& name)
-    : _value(value), _bind(bind), _section_name(section_name), _name(name) {}  
+    : _value(value), _bind(bind), _section_name(section_name), _name(name) {_num = id++;}  
 
     unsigned get_num() const;
     int get_value() const;
@@ -66,6 +67,10 @@ struct symbol{
     void set_bind(bind_type bind);
     void set_section_name(const std::string sec_name);
     void set_name(const std::string name);
+
+    friend std::ostream& operator<<(std::ostream& os, const symbol& obj){
+        return os << obj.get_name() << std::endl;
+    }
     
 };
 

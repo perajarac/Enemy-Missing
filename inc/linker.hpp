@@ -13,6 +13,7 @@ public:
     static void set_place_sections(std::vector<std::pair<std::string,std::string>> place_sections);
 
     static void read_obj_files();
+    static void connect_same_sections();
 
 
 
