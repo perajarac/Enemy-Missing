@@ -21,6 +21,10 @@ struct section{
     unsigned _base;
     unsigned _length;
     unsigned _lit_pool_base = 0;
+    std::unordered_map<std::string, std::vector<int>> relocation_table;
+
+    std::vector<std::pair<int, std::string>> memory_content;
+
 
     section() = default;
 
@@ -37,6 +41,7 @@ struct section{
 
     void set_length(unsigned length);
     void set_lit_pool_base(unsigned lit_pool_base);
+
 
 };
 
@@ -71,19 +76,23 @@ struct symbol{
     friend std::ostream& operator<<(std::ostream& os, const symbol& obj){
         return os << obj.get_name() << std::endl;
     }
+
+    bool operator==(const symbol& other) const {
+        return this->_name == other._name;  
+    }
     
 };
 
 struct file{
     std::vector<section> section_tables;
     std::vector<symbol> sym_table;
-    std::unordered_map<std::string, std::vector<int>> relocation_table;
     std::vector<std::pair<int, std::string>> memory_content;
 
     void add_section(section sec);
     void add_symbol(symbol sym);
-    void add_reloc_table(const std::string& name, std::vector<int> addreses);
 };
+
+extern int count_sec_length(const std::vector<section>& vec);
 
 
 

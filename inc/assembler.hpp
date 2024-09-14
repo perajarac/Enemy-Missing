@@ -142,8 +142,6 @@ private:
     static std::unordered_map<std::string, std::vector<int>> symbols_flink;
     static std::unordered_map<std::string, std::vector<int>> symbols_jump_flink;
 
-    static std::unordered_map<std::string, std::vector<int>> relocation_table;
-
     static literal_pool lit_pool;
     static std::map<int, int> literal_flink; //map memory_address->index in literal pool
 

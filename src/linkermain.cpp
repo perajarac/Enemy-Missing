@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Store section placements
-    std::vector<std::pair<std::string, std::string>> sections;
+    std::vector<std::pair<std::string, int>> sections;
     std::vector<std::string> used_sections; 
 
     // Parse section placements and output file name
@@ -42,12 +42,14 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
             std::string section = arg.substr(7, at_pos - 7);
-            std::string address = arg.substr(at_pos + 1);
+            std::string address_str = arg.substr(at_pos + 1);
+
             if(std::find(used_sections.begin(), used_sections.end(), section) != used_sections.end()){
                 std::cerr << "Error: multiple section place.\n";
                 return 1;
             }
             used_sections.push_back(section);
+            int address = std::stoi(address_str, nullptr, 16);
             sections.push_back({section, address});
         } else if (arg == "-o") {
             if (i + 1 >= argc) {
@@ -66,6 +68,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Check if the output file has the correct extension
+    if(first_arg == "-hex") Linker::is_hex = true;
     std::string expected_extension = (first_arg == "-hex") ? ".hex" : ".o";
     if (output_file.size() < expected_extension.size() ||
         output_file.substr(output_file.size() - expected_extension.size()) != expected_extension) {
@@ -73,11 +76,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    std::sort(sections.begin(), sections.end(), [](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+    return a.second < b.second;
+    }); //sort -place sections by address
+
     Linker::set_output(output_file);
     Linker::set_input(input_files);
     Linker::set_place_sections(sections);
 
     Linker::read_obj_files();
+    Linker::merge_same_sections();
+    Linker::map_sections();
+    Linker::print_sections_and_mem_content();
 
     return 0;
 }

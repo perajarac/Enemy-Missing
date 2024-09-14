@@ -17,8 +17,6 @@ std::map<int, int> Assembler::literal_flink;
 
 Assembler::literal_pool Assembler::lit_pool;
 
-std::unordered_map<std::string, std::vector<int>> Assembler::relocation_table;
-
 std::ofstream  Assembler::ass_output;
 std::ofstream  Assembler::ass_obj_output;
 int Assembler::current_address = 0;
@@ -392,7 +390,8 @@ void Assembler::handle_word(const std::string& sym_name){
         add_symbol(new_sym);
     }
 
-    relocation_table[sym_name].push_back(current_address);
+    section& current_section = section_tables.back();
+    current_section.relocation_table[sym_name].push_back(current_address - current_section.get_base()); //put symbol in reloc table of section
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -698,7 +697,8 @@ void Assembler::resovle_symbol_flink(){
                 }
             }
         }
-        relocation_table[sym.first].push_back(current_address);
+        section& current_section = section_tables.back();
+        current_section.relocation_table[sym.first].push_back(current_address-current_section.get_base()); //put symbol in reloc table of section
         if(section_tables.back().get_lit_pool_base() == 0) section_tables.back().set_lit_pool_base(current_address);
         memory_content.push_back(std::make_pair(current_address++, "00"));
         memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -890,20 +890,27 @@ void Assembler::write_symbol_table_context() {
 void Assembler::write_realoc(){
     ass_output.open(output_file_txt, std::ios::app);
     ass_output << "----------------Reloc Table----------------\n";
-    
-    ass_output << std::left << std::setw(20) << "Symbol:" 
-               << std::setw(10) << "Addresses:" << "\n";
-    for (const auto& sym : relocation_table) {
-        ass_output << std::left << std::setw(20) << sym.first;
-        for(auto address: sym.second){
-            ass_output << std::left << std::setw(10) << std::hex << address;
+
+    ass_output << std::left << std::setw(20) << "Section:" << std::setw(20) << "Symbol:" 
+            << std::setw(10) << "Addresses:" << "\n";
+
+    for (const auto& section : section_tables) {
+        ass_output << std::left << std::setw(20) << section.get_name() << "\n"; // New line for each section
+
+        for (const auto& sym : section.relocation_table) {
+            ass_output << std::setw(20) << ""  // Empty column for section name to align
+                    << std::setw(20) << sym.first;  // Symbol name
+
+            for (const auto& address : sym.second) {
+                ass_output << std::left << std::setw(10) << std::hex << address;  // Addresses
+            }
+            ass_output << "\n";  // New line for each symbol
         }
-        ass_output << "\n";
     }
 
     ass_output << "---------------------------------------------\n";
     ass_output.close();
-    
+
 }
 
 void Assembler::write_object_file(){
@@ -923,6 +930,23 @@ void Assembler::write_object_file(){
         ass_obj_output.write((char*)&section._base, sizeof(section._base));
         ass_obj_output.write((char*)&section._length, sizeof(section._length));
         ass_obj_output.write((char*)&section._lit_pool_base, sizeof(section._lit_pool_base));
+    // Write Relocation Table of section
+        int reloc_table_size = section.relocation_table.size();
+        ass_obj_output.write((char*)(&reloc_table_size), sizeof(reloc_table_size));
+        for(const auto& relocation : section.relocation_table){
+            std::string sym_name = relocation.first;
+            int name_len = sym_name.size();
+            ass_obj_output.write((char*)&name_len, sizeof(name_len));
+            for(int j = 0; j < name_len; j++) {
+                char c = sym_name[j];
+                ass_obj_output.write((char*)(&c), sizeof(c));
+            }
+            int reloc_len = relocation.second.size();
+            ass_obj_output.write((char*)&reloc_len, sizeof(reloc_len));
+            for(const auto& address : relocation.second){
+                ass_obj_output.write((char*)&address, sizeof(address));
+            }
+        }   
     }
     
     // Write Symbol Table
@@ -945,24 +969,6 @@ void Assembler::write_object_file(){
         for(int j = 0; j < name_len; j++) {
             char c = section_name[j];
             ass_obj_output.write((char*)(&c), sizeof(c));
-        }
-    }
-    
-    // Write Relocation Table
-    int reloc_table_size = relocation_table.size();
-    ass_obj_output.write((char*)(&reloc_table_size), sizeof(reloc_table_size));
-    for(const auto& relocation : relocation_table){
-        std::string sym_name = relocation.first;
-        int name_len = sym_name.size();
-        ass_obj_output.write((char*)&name_len, sizeof(name_len));
-        for(int j = 0; j < name_len; j++) {
-            char c = sym_name[j];
-            ass_obj_output.write((char*)(&c), sizeof(c));
-        }
-        int reloc_len = relocation.second.size();
-        ass_obj_output.write((char*)&reloc_len, sizeof(reloc_len));
-        for(const auto& address : relocation.second){
-            ass_obj_output.write((char*)&address, sizeof(address));
         }
     }
 
@@ -1051,3 +1057,4 @@ void Assembler::local_sym_errors(){
         }
     }
 }
+

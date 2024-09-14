@@ -76,6 +76,10 @@ void file::add_symbol(symbol sym) {
     sym_table.push_back(sym);
 }
 
-void file::add_reloc_table(const std::string& name, std::vector<int> addresses) {
-    relocation_table[name] = std::move(addresses);
+int count_sec_length(const std::vector<section>& vec){
+    int sum_length = 0;
+    for(const auto& sec:vec){
+        sum_length += sec.get_length();
+    }
+    return sum_length;
 }
