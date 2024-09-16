@@ -106,6 +106,9 @@ public:
 
     static void local_sym_errors();
 
+    static void resolve_local_sym_reloc();
+
+    
 
 
 private:

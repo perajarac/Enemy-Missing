@@ -19,7 +19,6 @@ handle_timer:
     call isr_timer
     jmp finish
 # obrada prekida od terminala
-.section g
 handle_terminal:
     call isr_terminal
     jmp finish

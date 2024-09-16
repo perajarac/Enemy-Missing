@@ -3,8 +3,6 @@
 #include "../inc/assembler.hpp"
 #include "../inc/parser.hpp"
 
-
-
 extern FILE* yyin;
 
 
@@ -31,6 +29,7 @@ int main(int argc, char* argv[]) {
     } while(!feof(yyin));
 
 	Assembler::end_last_section();
+	Assembler::resolve_local_sym_reloc();
 	Assembler::local_sym_errors();
 	if(Assembler::ass_end == false){
 		Assembler::write_section_context();

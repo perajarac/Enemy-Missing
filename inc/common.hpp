@@ -16,12 +16,19 @@
 
 enum bind_type {LOC, GLO, EXT};
 
+struct reloc_node{
+    int offset;
+    std::string symbol_name;
+    int addend;
+    bool is_section;
+};
+
 struct section{
     std::string _name;
     unsigned _base;
     unsigned _length;
     unsigned _lit_pool_base = 0;
-    std::unordered_map<std::string, std::vector<int>> relocation_table;
+    std::vector<reloc_node> relocation_table;
 
     std::vector<std::pair<int, std::string>> memory_content;
 

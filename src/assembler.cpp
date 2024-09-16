@@ -389,9 +389,11 @@ void Assembler::handle_word(const std::string& sym_name){
         symbol new_sym(sym_table.size(),-1,bind_type::LOC, "UND", sym_name);
         add_symbol(new_sym);
     }
-
+    symbol curr_sym = sym_table[sym_index(sym_name)];
     section& current_section = section_tables.back();
-    current_section.relocation_table[sym_name].push_back(current_address - current_section.get_base()); //put symbol in reloc table of section
+    bool ternar = curr_sym.get_bind() == LOC;
+    int offset = current_address-current_section.get_base();
+    current_section.relocation_table.push_back({offset, curr_sym.get_name(), (ternar ? curr_sym.get_value():0), (ternar? true:false)}); //put symbol in reloc table of section
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -697,8 +699,11 @@ void Assembler::resovle_symbol_flink(){
                 }
             }
         }
+        symbol curr_sym = sym_table[sym_index(sym.first)];
         section& current_section = section_tables.back();
-        current_section.relocation_table[sym.first].push_back(current_address-current_section.get_base()); //put symbol in reloc table of section
+        bool ternar = curr_sym.get_bind() == LOC;
+        int offset = current_address-current_section.get_base();
+        current_section.relocation_table.push_back({offset, curr_sym.get_name(), (ternar ? curr_sym.get_value():0), (ternar? true:false)}); //put symbol in reloc table of section
         if(section_tables.back().get_lit_pool_base() == 0) section_tables.back().set_lit_pool_base(current_address);
         memory_content.push_back(std::make_pair(current_address++, "00"));
         memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -892,18 +897,18 @@ void Assembler::write_realoc(){
     ass_output << "----------------Reloc Table----------------\n";
 
     ass_output << std::left << std::setw(20) << "Section:" << std::setw(20) << "Symbol:" 
-            << std::setw(10) << "Addresses:" << "\n";
+            << std::setw(10) << "Offset:" << std::setw(10) << "Addend:" <<  "\n";
 
     for (const auto& section : section_tables) {
         ass_output << std::left << std::setw(20) << section.get_name() << "\n"; // New line for each section
 
-        for (const auto& sym : section.relocation_table) {
+        for (const auto& reloc_node : section.relocation_table) {
             ass_output << std::setw(20) << ""  // Empty column for section name to align
-                    << std::setw(20) << sym.first;  // Symbol name
+                    << std::setw(20) << reloc_node.symbol_name
+                    << std::setw(20) << reloc_node.offset
+                    << std::setw(20) << reloc_node.addend;
 
-            for (const auto& address : sym.second) {
-                ass_output << std::left << std::setw(10) << std::hex << address;  // Addresses
-            }
+            
             ass_output << "\n";  // New line for each symbol
         }
     }
@@ -934,18 +939,20 @@ void Assembler::write_object_file(){
         int reloc_table_size = section.relocation_table.size();
         ass_obj_output.write((char*)(&reloc_table_size), sizeof(reloc_table_size));
         for(const auto& relocation : section.relocation_table){
-            std::string sym_name = relocation.first;
+            std::string sym_name = relocation.symbol_name;
             int name_len = sym_name.size();
             ass_obj_output.write((char*)&name_len, sizeof(name_len));
             for(int j = 0; j < name_len; j++) {
                 char c = sym_name[j];
                 ass_obj_output.write((char*)(&c), sizeof(c));
             }
-            int reloc_len = relocation.second.size();
-            ass_obj_output.write((char*)&reloc_len, sizeof(reloc_len));
-            for(const auto& address : relocation.second){
-                ass_obj_output.write((char*)&address, sizeof(address));
-            }
+            int reloc_offset = relocation.offset;
+            ass_obj_output.write((char*)&reloc_offset, sizeof(reloc_offset));
+            int reloc_addend = relocation.addend;
+            ass_obj_output.write((char*)&reloc_addend, sizeof(reloc_addend));
+            bool reloc_is_section = relocation.is_section;
+            ass_obj_output.write((char*)&reloc_is_section, sizeof(reloc_is_section));
+            
         }   
     }
     
@@ -1058,3 +1065,18 @@ void Assembler::local_sym_errors(){
     }
 }
 
+void Assembler::resolve_local_sym_reloc(){ //we want to change sym name for section name and to check if undefined symbols have definition
+    for(section& sec : section_tables){
+    for(reloc_node& rel_node:sec.relocation_table){
+        if(!rel_node.is_section)continue; //if symbol is not local skip
+        std::string sym_name = rel_node.symbol_name;
+        symbol sym = sym_table[sym_index(sym_name)];
+        if(sym.get_value() == -1){
+            std::cout << "Error, symbol " << sym.get_name() << " is not defined\n";
+            exit(-1);
+        }
+        rel_node.symbol_name = sec.get_name();
+        rel_node.addend = sym.get_value();
+    }
+}
+}

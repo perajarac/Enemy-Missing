@@ -32,6 +32,7 @@ void Linker::read_obj_files(){
         int section_table_size;
         obj_file.read(reinterpret_cast<char*>(&section_table_size), sizeof(int));
         for(int i = 0;i<section_table_size;i++){
+
             int sec_name_length;
             obj_file.read(reinterpret_cast<char*>(&sec_name_length), sizeof(int));
             std::string sec_name(sec_name_length,'\0');
@@ -53,15 +54,13 @@ void Linker::read_obj_files(){
                 obj_file.read(reinterpret_cast<char*>(&sym_name_length), sizeof(int));
                 std::string sym_name(sym_name_length,'\0');
                 obj_file.read(&sym_name[0], sym_name_length);
-                int reloc_vector_length;
-                obj_file.read(reinterpret_cast<char*>(&reloc_vector_length), sizeof(int));
-                std::vector<int> reloc_addresses;
-                for(int j = 0; j < reloc_vector_length; j++){
-                    int curr;
-                    obj_file.read(reinterpret_cast<char*>(&curr), sizeof(int));
-                    reloc_addresses.push_back(curr);
-                }
-                cur_sec.relocation_table[sym_name] = reloc_addresses;
+                int reloc_offset;
+                obj_file.read(reinterpret_cast<char*>(&reloc_offset), sizeof(int));
+                int reloc_addend;
+                obj_file.read(reinterpret_cast<char*>(&reloc_addend), sizeof(int));
+                bool reloc_is_section;
+                obj_file.read(reinterpret_cast<char*>(&reloc_is_section), sizeof(bool));
+                cur_sec.relocation_table.push_back({reloc_offset,sym_name,reloc_addend,reloc_is_section});
             }
 
             current_file.add_section(cur_sec);
@@ -134,9 +133,8 @@ void Linker::merge_same_sections(){
                 section._lit_pool_base += length;
                 section._base = length;
                 for(auto& rel_entry:section.relocation_table){
-                    for(auto& address : rel_entry.second){
-                        address +=  length;
-                    }
+                    rel_entry.offset += length;
+                    if(rel_entry.is_section) rel_entry.addend += length;
                 }
                 merged_sec_table[section.get_name()].push_back(section);
             }
@@ -173,7 +171,7 @@ void Linker::merge_symbol_tables(){
                 extern_symbols.push_back(sym);
             }else{
                 if(sym.get_bind() == bind_type::GLO || sym.get_bind() == bind_type::LOC){
-                    if(std::find(merged_sym_table.begin(), merged_sym_table.end(), sym)!=merged_sym_table.end()){
+                    if(std::find(merged_sym_table.begin(), merged_sym_table.end(), sym)!=merged_sym_table.end() && sym.get_bind()!= bind_type::LOC){
                         std::cout << "Error, multiple definition of symbol: " << sym.get_name();
                         exit(1);
                     }
@@ -230,7 +228,10 @@ void Linker::map_sections(){
         vector_of_merged_sections[0]._base = elem.second;
         int skip_first = 1;
         for(auto& section : vector_of_merged_sections){
-            if(skip_first == 1)skip_first--;continue; //skip base section of merged sections
+            if(skip_first == 1) {
+                skip_first--;
+                continue; // skip base section of merged sections
+            }
             section._base += elem.second;
             section._lit_pool_base += elem.second;
         }
@@ -254,9 +255,12 @@ void Linker::map_sections(){
         vector_of_merged_sections[0]._base = first_free_address;
         int skip_first = 1;
         for(auto& section : vector_of_merged_sections){
-            if(skip_first == 1)skip_first--;continue; //skip base section of merged sections
+            if(skip_first == 1) {
+                skip_first--;
+                continue; // skip base section of merged sections
+            }
             section._base += first_free_address;
-            section._lit_pool_base += first_free_address;
+            section._lit_pool_base +=first_free_address;
         }
         first_free_address = vector_of_merged_sections[0]._base + count_sec_length(vector_of_merged_sections);
     }
@@ -296,4 +300,25 @@ void Linker::print_sections_and_mem_content(){
         //     }
         // }
     }
+
+    ass_output << "----------------Reloc Table----------------\n";
+
+    ass_output << std::left << std::setw(20) << "Section:" << std::setw(20) << "Symbol:" 
+            << std::setw(10) << "Offset:" << std::setw(10) << "Addend:" <<  "\n";
+
+    for (const auto& member : merged_sec_table) {
+        ass_output << std::left << std::setw(20) << member.first << "\n"; // New line for each section
+        for(auto section:member.second)
+        for (const auto& reloc_node : section.relocation_table) {
+            ass_output << std::setw(20) << ""  // Empty column for section name to align
+                    << std::setw(20) << reloc_node.symbol_name
+                    << std::setw(20) << reloc_node.offset
+                    << std::setw(20) << reloc_node.addend;
+
+            
+            ass_output << "\n";  // New line for each symbol
+        }
+    }
+
+    ass_output << "---------------------------------------------\n";
 }
