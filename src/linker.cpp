@@ -170,14 +170,17 @@ void Linker::merge_symbol_tables(){
             if(sym.get_bind() == bind_type::EXT){
                 extern_symbols.push_back(sym);
             }else{
-                if(sym.get_bind() == bind_type::GLO || sym.get_bind() == bind_type::LOC){
-                    if(std::find(merged_sym_table.begin(), merged_sym_table.end(), sym)!=merged_sym_table.end() && sym.get_bind()!= bind_type::LOC){
+                if(sym.get_bind() == bind_type::GLO){
+                    if(std::find(merged_sym_table.begin(), merged_sym_table.end(), sym)!=merged_sym_table.end()){
                         std::cout << "Error, multiple definition of symbol: " << sym.get_name();
                         exit(1);
                     }
 
-                    sym.set_value(merged_sec_table[sym.get_section_name()][0].get_base() + sym.get_value()); //value of symbol is merged
-                    merged_sym_table.push_back(sym);
+                    auto sec_it = merged_sec_table.find(sym.get_section_name());
+                    if (sec_it != merged_sec_table.end() && !sec_it->second.empty()) {
+                        sym.set_value(sec_it->second[0].get_base() + sym.get_value()); //postavi vrednost simbola ako je sekcija definisana
+                        merged_sym_table.push_back(sym);
+                    }
                 }
             }
         }
@@ -188,7 +191,7 @@ void Linker::merge_symbol_tables(){
         if(it != merged_sym_table.end()) continue;
         // simbol je eksteran a nema ga u tabeli 
         if(is_hex){ // Ako treba da generisemo izvrsni fajl ovo je greska
-            std::cout << "Error, extern symbol " << ex_sym.get_name() << " is not defined in any file: " << std::endl;
+            std::cout << "Error, extern symbol " << ex_sym.get_name() << " is not defined in any file " << std::endl;
             exit(-1);
         }
         else{ // A ako je u pitanju relokativni fajl onda jednostavno dodamo simbol kao eksterni
@@ -318,6 +321,26 @@ void Linker::print_sections_and_mem_content(){
             
             ass_output << "\n";  // New line for each symbol
         }
+    }
+
+    ass_output << "---------------------------------------------\n";
+
+
+    ass_output << "----------------Symbol Table----------------\n";
+    
+    ass_output << std::left << std::setw(10) << "Num:" 
+               << std::setw(10) << "Value:" 
+               << std::setw(15) << "Bind:" 
+               << std::setw(15) << "Section:" 
+               << std::setw(15) << "Name:" << "\n";
+    for (const auto& sym : merged_sym_table) {
+        ass_output << std::left << std::setw(10) << sym.get_num();
+
+        ass_output << std::setw(10) << std::hex << sym.get_value();
+
+        ass_output << std::setw(15) << sym.get_bind()
+                   << std::setw(15) << sym.get_section_name()
+                   << std::setw(15) << sym.get_name() << "\n";
     }
 
     ass_output << "---------------------------------------------\n";

@@ -87,6 +87,7 @@ int main(int argc, char* argv[]) {
     Linker::read_obj_files();
     Linker::merge_same_sections();
     Linker::map_sections();
+    Linker::merge_symbol_tables();
     Linker::print_sections_and_mem_content();
 
     return 0;

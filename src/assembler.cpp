@@ -1057,10 +1057,13 @@ void Assembler::wlitims(int literal, int reg){
 
 
 void Assembler::local_sym_errors(){
-    for(auto sym: sym_table){
+    for(auto& sym: sym_table){
         if((sym.get_bind() == bind_type::LOC) && sym.get_section_name() == "UND"){
             std::cout << "Error, symbol " << sym.get_name() << " is not defined\n";
             ass_end = true;
+        }
+        if((sym.get_bind() == bind_type::GLO) && sym.get_value() == -1){
+            sym.set_bind(bind_type::EXT);
         }
     }
 }
