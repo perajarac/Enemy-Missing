@@ -87,7 +87,6 @@ struct symbol{
     bool operator==(const symbol& other) const {
         return this->_name == other._name;  
     }
-    
 };
 
 struct file{

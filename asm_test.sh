@@ -9,7 +9,9 @@ assembly_files=(
     "test/handler.s"
     "test/isr_terminal.s"
     "test/isr_timer.s"
+    "test/isr_software.s"
     "test/main.s"
+    "test/math.s"
 )
 
 # Loop through each assembly file and process it

@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
             used_sections.push_back(section);
-            int address = std::stoi(address_str, nullptr, 16);
+            int address = std::stoll(address_str, nullptr, 16);
             sections.push_back({section, address});
         } else if (arg == "-o") {
             if (i + 1 >= argc) {
@@ -86,8 +86,20 @@ int main(int argc, char* argv[]) {
 
     Linker::read_obj_files();
     Linker::merge_same_sections();
-    Linker::map_sections();
+    if(Linker::is_hex){
+        Linker::map_sections();
+    }
     Linker::merge_symbol_tables();
+    Linker::merge_relocation_tables();
+    Linker::merge_memory_contents();
+
+    if(Linker::is_hex){
+    Linker::resolve_relocations();
+    }
+
+    Linker::make_object_file();
+
+
     Linker::print_sections_and_mem_content();
 
     return 0;

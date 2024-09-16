@@ -404,7 +404,7 @@ void Assembler::handle_word(const std::string& sym_name){
 
 
 void Assembler::handle_word(unsigned literal) {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 3; i >= 0; --i) {  // Start from the most significant byte
         unsigned byte = (literal >> (i * 8)) & 0xFF;
         std::stringstream ss;
         ss << std::hex << std::setw(2) << std::setfill('0') << byte;

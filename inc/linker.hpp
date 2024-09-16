@@ -16,6 +16,10 @@ public:
     static void merge_same_sections();
     static void map_sections();
     static void merge_symbol_tables();
+    static void merge_relocation_tables();
+    static void merge_memory_contents();
+    static void resolve_relocations();
+    static void make_object_file();
 
 
     static void print_sections_and_mem_content();
@@ -24,7 +28,12 @@ public:
 private:
 
     static void copy_section_memory_content(const std::vector<std::pair<int, std::string>>& file_memmory_content,section& sec);
+    static void copy_section_memory_content(const std::map<int, std::string>& file_memmory_content,section& sec);
     static void check_overlapping();
+
+    static void concat_memmory_content(const section& sec_to_concat);
+
+    static symbol get_sym(std::string& sym_name);
     
 
 
@@ -36,6 +45,7 @@ private:
     static std::vector<std::string> section_order;
 
     static std::vector<symbol> merged_sym_table;
+    static std::vector<reloc_node> merged_relocation_table;
 
 
 
