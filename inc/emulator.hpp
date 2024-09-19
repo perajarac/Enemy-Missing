@@ -13,12 +13,6 @@ public:
         obj_hex = in_obj;
     }
 
-    struct place_section{
-        unsigned int base;
-        int size;
-        std::map<int, std::string> memory_content;
-    };
-
 
     static constexpr int start_memory = 0x40000000;
     static constexpr long memory_size = 1L<<32;
@@ -29,18 +23,28 @@ public:
     static constexpr int term_out = 0x0FFFFFF00;
     static constexpr int soft_int = 0x4;
 
+    static void map_memory();
+    static void lae_ins(); //load and exec instructions
+    static void mk_interrupt(unsigned long);
+
+
 private:
+
+    static void push(int data);
+    static int pop();
+    
+
     static std::vector<int> gprs;
     static int& sp;
     static int& pc;
     static std::vector<int> csrs;
-    static void* memory;
+    static std::map<int,char> memory;
     
     static std::string obj_hex;
+    static std::vector<section> sections;
+
+    static bool emulating;
 
 };
-
-
-
 
 #endif

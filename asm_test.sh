@@ -22,3 +22,11 @@ for file in "${assembly_files[@]}"; do
     # Run the assembler command
     ./asembler -o "${base_name}.o" "$file"
 done
+
+./linker -hex \
+  -place=my_code@0x40000000 -place=math@0xF0000000 \
+  -o program.hex \
+  handler.o math.o main.o isr_terminal.o isr_timer.o isr_software.o
+
+
+./emulator program.hex

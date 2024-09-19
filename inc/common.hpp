@@ -12,6 +12,9 @@
 #include <algorithm>
 #include <unordered_set>
 #include <map>
+#include <sys/mman.h>
+#include <iostream>
+#include <cstring>
 
 
 enum bind_type {LOC, GLO, EXT};
