@@ -1,8 +1,9 @@
 # Targets
 OBJS_ASS  = src/common.o src/assembler.o src/parser.o src/flex.o src/mainass.o 
 OBJS_LINKER = src/common.o src/assembler.o src/linker.o src/linkermain.o
+OBJS_EMULATOR = src/common.o src/emulator.o src/emulatormain.o
 
-all: asembler linker
+all: asembler linker emulator
 	@echo "Build complete."
 
 # Link executable
@@ -13,6 +14,10 @@ asembler: $(OBJS_ASS)
 linker: $(OBJS_LINKER)
 	@echo "Building linker..."
 	@g++ -o $@ $(OBJS_LINKER)
+
+emulator: $(OBJS_EMULATOR)
+	@echo "Building emulator..."
+	@g++ -o $@ $(OBJS_EMULATOR)
 
 # Compile .cpp files to object files
 src/assembler.o: src/assembler.cpp inc/assembler.hpp
@@ -38,13 +43,19 @@ src/parser.o: src/parser.cpp
 src/common.o: src/common.cpp inc/common.hpp
 	@g++ -c -o $@ $<
 
+src/emulator.o: src/emulator.cpp inc/emulator.hpp
+	@g++ -c -o $@ $<
+
 src/mainass.o: src/mainass.cpp
 	@g++ -c -o $@ $<
 
 src/linkermain.o: src/linkermain.cpp
 	@g++ -c -o $@ $<
 
+src/emulatormain.o: src/emulatormain.cpp
+	@g++ -c -o $@ $<
+
 # Clean target
 clean:
 	@echo "Cleaning up..."
-	@rm -f asembler linker src/*.o src/flex.cpp src/parser.cpp src/parser.output assout.txt *.o *.txt
+	@rm -f asembler linker emulator src/*.o src/flex.cpp src/parser.cpp src/parser.output assout.txt *.o *.txt *.hex

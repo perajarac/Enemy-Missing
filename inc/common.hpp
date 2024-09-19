@@ -101,5 +101,57 @@ struct file{
 extern int count_sec_length(const std::vector<section>& vec);
 
 
+enum op_codes{
+    HALT = 0x00,
+    INT = 0x10,
+    CALL_IMM = 0x20,
+    CALL_MEM = 0x21,
+    JMP_IMM = 0x30,
+    BEQ_IMM = 0x31,
+    BNE_IMM = 0x32,
+    BGT_IMM = 0x33,
+    JMP_MEM = 0x38,
+    BEQ_MEM = 0x39,
+    BNE_MEM = 0x3A,
+    BGT_MEM = 0x3B,
+    XCHG = 0x40,
+    ADD = 0x50,
+    SUB = 0x51,
+    MUL = 0x52,
+    DIV = 0x53,
+    NOT = 0x60,
+    AND = 0x61,
+    OR = 0x62,
+    XOR = 0x63,
+    SHL = 0x70,
+    SHR = 0x71,
+    ST_MEM = 0x80,
+    ST_MEM_MEM = 0x82,
+    PUSH = 0x81,
+    CSRRD = 0x90,
+    LD_REG = 0x91,
+    LD_MEM_REG = 0x92,
+    POP = 0x93,
+    CSRWR = 0x94,
+    CSRWR_OR = 0x95,
+    CSRWR_MEM = 0x96,
+    CSRWR_MEM_POSTINC = 0x97
+  };
+
+
+  enum gpr{
+    r0 = 0,
+    r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15,
+    sp = 14,
+    pc = 15
+  };
+
+  enum csr{
+    status = 0,
+    handler,
+    cause
+  };
+
+
 
 #endif

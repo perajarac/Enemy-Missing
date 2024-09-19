@@ -82,7 +82,9 @@ int main(int argc, char* argv[]) {
 
     Linker::set_output(output_file);
     Linker::set_input(input_files);
-    Linker::set_place_sections(sections);
+    if(Linker::is_hex){
+        Linker::set_place_sections(sections);
+    }
 
     Linker::read_obj_files();
     Linker::merge_same_sections();

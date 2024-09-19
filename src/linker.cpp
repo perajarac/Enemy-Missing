@@ -440,28 +440,16 @@ void Linker::make_object_file(){
         }
 
         // Write mem content
-        int num_of_sec = merged_sec_table.size();
-        ass_obj_output.write((char*)(&num_of_sec), sizeof(int));
-        for(auto sec_name:section_order){
-            section temp_sec; //used to extract memory of merged section
-            temp_sec._base = merged_sec_table[sec_name][0].get_base();
-            temp_sec._length = count_sec_length(merged_sec_table[sec_name]);
-            ass_obj_output.write((char*)(&temp_sec._base), sizeof(int));
-            ass_obj_output.write((char*)(&temp_sec._length), sizeof(int));
-            copy_section_memory_content(memory_content, temp_sec);
-            int memory_content_size = temp_sec.memory_content.size();   //pocetna adresa, velicina sekcije i instrukcije koje pripadaju sekciji promeniti
+            int memory_content_size = memory_content.size();
             ass_obj_output.write((char*)(&memory_content_size), sizeof(memory_content_size));
-            for(const auto& [address, content] : temp_sec.memory_content){
-                for(int j = 0; j < 2; j++) {
-                    char c = content[j];
-                    ass_obj_output.write((char*)(&c), sizeof(c));
-                }
+            for(const auto& [address, content] : memory_content){
+            for(int j = 0; j < 2; j++) {
+                char c = content[j];
+                ass_obj_output.write((char*)(&c), sizeof(c));
             }
         }
 
     }
-
-
 
 }
 
