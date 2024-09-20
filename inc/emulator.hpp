@@ -29,17 +29,25 @@ public:
     static void write_reg();
     static void setup();
 
+    static void setup_terminal();
+    static void restart_terminal();
+    static void read_from_stdin();
+
     static bool end(){
         return emulating == false;
     }
 
+    static bool term_int;
+
+    static int counter;
 
 private:
 
     static void push(int data);
     static int pop();
 
-    static void write(int addr, int data);
+    static void write(int addr, long data);
+    static void write_byte(int address, char data);
     static int read(int addr);
     
 
@@ -53,6 +61,7 @@ private:
     static std::vector<section> sections;
 
     static bool emulating;
+
 
 };
 

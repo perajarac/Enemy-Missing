@@ -15,7 +15,8 @@
 #include <sys/mman.h>
 #include <iostream>
 #include <cstring>
-
+#include <termios.h>
+#include <unistd.h>
 
 enum bind_type {LOC, GLO, EXT};
 

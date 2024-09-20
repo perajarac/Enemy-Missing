@@ -7,9 +7,12 @@ int& Emulator::sp = gprs[14];
 int& Emulator::pc = gprs[15];
 std::vector<section> Emulator::sections;
 bool Emulator::emulating = false;
+bool Emulator::term_int = false;
 
 std::map<int,char> Emulator::memory;
 std::string Emulator::obj_hex;
+
+int Emulator::counter = 0;
 
 void Emulator::read_obj(){
     if(obj_hex == ""){
@@ -67,7 +70,7 @@ void Emulator::lae_ins(){
     int a,b,c,d;
     auto it = memory.find(pc);
     if (it == memory.end()) {
-        std::cout << "PC fault, nothing on that address" << std::endl;
+        std::cout << "PC fault, nothing on that address:" << std::hex << pc << std::endl;
         return;
     }
     uint instruction = read(pc);
@@ -78,8 +81,9 @@ void Emulator::lae_ins(){
     c = (instruction >> 12) & 0x0f;
     d = instruction & 0x0fff;
 
-    std::cout << std::hex << pc << ":";
-    std::cout << std::hex << gprs[14] << std::endl;
+    //std::cout << std::hex << pc << ":";
+    // std::cout << " ins: " << std::hex <<  op_code << a << b << c << d  << std::flush;
+    // std::cout << "r1: " << std::hex <<gprs[1] << " r2: " << std::hex << gprs[2] << std::endl << std::flush;
     pc += 4;
 
     if(d & 0x800){ // negative offset for jumps
@@ -112,7 +116,7 @@ void Emulator::lae_ins(){
     }
     else if(op_code == BGT_IMM){
         if(gprs[b] > gprs[c]){
-        pc = gprs[a] + d - 4;
+            pc = gprs[a] + d - 4;
         }
     }
     else if(op_code == BNE_MEM){
@@ -201,6 +205,7 @@ void Emulator::lae_ins(){
             gprs[a] = read(gprs[b] + d - 4);
         }else{
             gprs[a] = read(gprs[b] + d);
+            // std::cout << std::hex  << "majmun: " << read(0xffffff04) << std::endl << std::flush;
 
         }
     }
@@ -227,11 +232,12 @@ void Emulator::lae_ins(){
         std:: cout << "EMULATOR GRESKA: Nepoznata instrukcija sa kodom operacije: 0x" << std::hex << op_code << std::endl;
     }
 
+
 }
 
 
 //write and read 4bytes
-void Emulator::write(int address, int data){
+void Emulator::write(int address, long data){
     unsigned char* ptr = reinterpret_cast<unsigned char*>(&data);
     memory[address] = ptr[3]; 
     memory[address + 1] = ptr[2];
@@ -252,6 +258,7 @@ int Emulator::read(int address){
                   (static_cast<int>(byte_1) << 8)  |
                   (static_cast<int>(byte_0));
 
+
     return data;
 }
 
@@ -264,7 +271,6 @@ void Emulator::push(int data){
     memory[sp + 1] = ptr[2];
     memory[sp + 2] = ptr[1];
     memory[sp + 3] = ptr[0]; 
-
 }
 
 int Emulator::pop(){
@@ -290,7 +296,6 @@ void Emulator::mk_interrupt(int uzrok){
 
     csrs[cause] = uzrok;
     pc = csrs[handler]; 
-
 
     csrs[status] |= 0x4; 
     csrs[status] |= 0x2; 
@@ -320,4 +325,34 @@ void Emulator::write_reg(){
     if(i % 4 == 3) std::cout <<  std::endl;
   }
   std::cout << std::endl;
+}
+
+struct termios old_setup;
+struct termios new_setup;
+
+
+void Emulator::setup_terminal(){
+  tcgetattr(STDIN_FILENO, &old_setup);
+  
+  new_setup = old_setup;
+
+  new_setup.c_lflag &= ~(ECHONL | ICANON | IEXTEN);
+  
+  new_setup.c_cc[VTIME] = 0; 
+  new_setup.c_cc[VMIN] = 0; 
+
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_setup);
+
+}
+
+void Emulator::restart_terminal(){
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_setup);
+}
+
+void Emulator::read_from_stdin(){
+  char character;
+  if(::read(STDIN_FILENO, &character, 1) == 1){
+    write(term_in, character); 
+    term_int = true;
+  }
 }

@@ -19,19 +19,19 @@ int main(int argc, char* argv[]) {
 
     Emulator::setup();
 
-    // napraviTerminal();
-    int i = 0;
+    Emulator::setup_terminal();
+    int i =0;
     while(!Emulator::end()){
         Emulator::lae_ins();
-
-        // citajSaStandardnogUlaza();
-        // if(prekidTerminala == true){
-        // mk_int(PREKID_TERMINAL);
-        // prekidTerminala = false;
-        // } 
+        Emulator::read_from_stdin();
+        if(Emulator::term_int == true){
+            Emulator::mk_interrupt(Emulator::terminal_int);
+            Emulator::term_int = false;  
+        }
+        if(i==20) break;
     }
 
-    // restartujTerminal();
+    Emulator::restart_terminal();
 
     Emulator::write_reg();
     
