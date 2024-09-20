@@ -363,7 +363,7 @@ void Linker::make_object_file(){
             ass_obj_output.write((char*)(&temp_sec._base), sizeof(int));
             ass_obj_output.write((char*)(&temp_sec._length), sizeof(int));
             copy_section_memory_content(memory_content, temp_sec);
-            int memory_content_size = temp_sec.memory_content.size();   //pocetna adresa, velicina sekcije i instrukcije koje pripadaju sekciji promeniti
+            int memory_content_size = temp_sec.memory_content.size();   
             ass_obj_output.write((char*)(&memory_content_size), sizeof(memory_content_size));
             for(const auto& [address, content] : temp_sec.memory_content){
                 for(int j = 0; j < 2; j++) {

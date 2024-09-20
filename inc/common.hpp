@@ -103,6 +103,8 @@ struct file{
 
 extern int count_sec_length(const std::vector<section>& vec);
 
+extern char hex_to_string(const std::string& hex_str);
+
 
 enum op_codes{
     HALT = 0x00,

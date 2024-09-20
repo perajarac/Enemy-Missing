@@ -17,6 +17,23 @@ int main(int argc, char* argv[]) {
     Emulator::read_obj();
     Emulator::map_memory();
 
+    Emulator::setup();
 
+    // napraviTerminal();
+    int i = 0;
+    while(!Emulator::end()){
+        Emulator::lae_ins();
+
+        // citajSaStandardnogUlaza();
+        // if(prekidTerminala == true){
+        // mk_int(PREKID_TERMINAL);
+        // prekidTerminala = false;
+        // } 
+    }
+
+    // restartujTerminal();
+
+    Emulator::write_reg();
+    
     return 0;
 }

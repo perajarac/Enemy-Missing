@@ -6,12 +6,12 @@ make
 
 # List of assembly files to process
 assembly_files=(
-    "test/handler.s"
-    "test/isr_terminal.s"
-    "test/isr_timer.s"
-    "test/isr_software.s"
-    "test/main.s"
-    "test/math.s"
+    "test/nivo-a/handler.s"
+    "test/nivo-a/isr_terminal.s"
+    "test/nivo-a/isr_timer.s"
+    "test/nivo-a/isr_software.s"
+    "test/nivo-a/main.s"
+    "test/nivo-a/math.s"
 )
 
 # Loop through each assembly file and process it

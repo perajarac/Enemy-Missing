@@ -38,6 +38,7 @@ void Emulator::read_obj(){
         temp_sec.memory_content = memory_content;
         sections.push_back(temp_sec);
     }
+
 }
 
 void Emulator::map_memory(){
@@ -46,18 +47,19 @@ void Emulator::map_memory(){
         std::stringstream ss;
         ss << std::hex << hex_string;
         ss >> byte;
-        return static_cast<unsigned char>(byte);
+        return static_cast<unsigned char>(byte & 0xff);
     };
-
     for (const section& sec : sections) {
         int base = sec.get_base();  
         for (const auto& mem_pair : sec.memory_content) {
             int offset = mem_pair.first;
             unsigned char byte_value = hex_string_to_byte(mem_pair.second);
             int dest_address = base + offset;
-            memory[dest_address] = byte_value;
+            memory[dest_address] = (byte_value & 0xff);
         }
+
     }
+
 }
 
 void Emulator::lae_ins(){
@@ -67,186 +69,255 @@ void Emulator::lae_ins(){
     if (it == memory.end()) {
         std::cout << "PC fault, nothing on that address" << std::endl;
         return;
-    } 
-    uint instruction = memory[pc];
+    }
+    uint instruction = read(pc);
+    
     op_code = (op_codes)(instruction >> 24);
     a = (instruction >> 20) & 0x0f;
     b = (instruction >> 16) & 0x0f;
     c = (instruction >> 12) & 0x0f;
     d = instruction & 0x0fff;
 
+    std::cout << std::hex << pc << ":";
+    std::cout << std::hex << gprs[14] << std::endl;
+    pc += 4;
+
     if(d & 0x800){ // negative offset for jumps
         d = -1 * ((~d & 0xfff) + 1);
     }
 
-  if(a < 0 || a > 15 || b < 0 || b > 15 || c < 0 || c > 15){
-    // Nevalidan registar
-    std::cout << "Error: unvalid register: 0x" << std::hex <<  op_code << std::endl;
-    //napraviPrekid(INSTRUKCIJSKA_GRESKA);
-    return;
-  }
+    if(a < 0 || a > 15 || b < 0 || b > 15 || c < 0 || c > 15){
+        // Nevalidan registar
+        std::cout << "Error: unvalid register: 0x" << std::hex <<  op_code << std::endl;
+        mk_interrupt(ins_fault);
+        return;
+    }
 
     if(op_code == HALT){
         emulating = false;
     }
     else if(op_code == INT){
-        napraviPrekid(SOFTVERSKI_PREKID);
+        mk_interrupt(soft_int);
     }
     else if(op_code == JMP_MEM){
-        rpc = procitajInt(gp_registri[a] + d);
+        pc = read(gprs[a] + d - 4);
     }
     else if(op_code == JMP_IMM){
-        rpc = gp_registri[a] + d;
+        pc = gprs[a] + d - 4;
     }
     else if(op_code == BGT_MEM){
-        if(gp_registri[b] > gp_registri[c]){
-        rpc = procitajInt(gp_registri[a] + d);
+        if(gprs[b] > gprs[c]){
+        pc = read(gprs[a] + d - 4);
         }
     }
     else if(op_code == BGT_IMM){
-        if(gp_registri[b] > gp_registri[c]){
-        rpc = gp_registri[a] + d;
+        if(gprs[b] > gprs[c]){
+        pc = gprs[a] + d - 4;
         }
     }
     else if(op_code == BNE_MEM){
-        if(gp_registri[b] != gp_registri[c]){
-        rpc = procitajInt(gp_registri[a] + d);
+        if(gprs[b] != gprs[c]){
+        pc = read(gprs[a] + d - 4);
         }
     }
     else if(op_code == BNE_IMM){
-        if(gp_registri[b] != gp_registri[c]){
-        rpc = gp_registri[a] + d;
+        if(gprs[b] != gprs[c]){
+            pc = gprs[a] + d - 4;
         }
     }
     else if(op_code == BEQ_MEM){
-        if(gp_registri[b] == gp_registri[c]){
-        rpc = procitajInt(gp_registri[a] + d);
+        if(gprs[b] == gprs[c]){
+            pc = read(gprs[a] + d - 4);
         }
     }
     else if(op_code == BEQ_IMM){
-        if(gp_registri[b] == gp_registri[c]){
-        rpc = gp_registri[a] + d;
+        if(gprs[b] == gprs[c]){
+            pc = gprs[a] + d - 4;
         }
     }
     else if(op_code == CALL_MEM){
-        push(rpc);
-        rpc = procitajInt(gp_registri[a] + d);
+        push(pc);
+        pc = read(gprs[b] + d - 4);
+
     }
     else if(op_code == CALL_IMM){
-        push(rpc);
-        rpc = gp_registri[a] + d;
+        push(pc);
+        pc = gprs[b] + d - 4;
     }
     else if(op_code == XCHG){
-        unsigned long tmp = gp_registri[b];
-        gp_registri[b] = gp_registri[c];
-        gp_registri[c] = tmp;
+        unsigned long tmp = gprs[b];
+        gprs[b] = gprs[c];
+        gprs[c] = tmp;
     }
     else if(op_code == ADD){
-        gp_registri[a] = gp_registri[b] + gp_registri[c];
+        gprs[a] = gprs[b] + gprs[c];
     }
     else if(op_code == SUB){
-        gp_registri[a] = gp_registri[b] - gp_registri[c];
+        gprs[a] = gprs[b] - gprs[c];
     }
     else if(op_code == MUL){
-        gp_registri[a] = gp_registri[b] * gp_registri[c];
+        gprs[a] = gprs[b] * gprs[c];
     }
     else if(op_code == DIV){
-        if(gp_registri[c] == 0){
-        cout << "EMULATOR GRESKA: Deljenje nulom\n";
-        napraviPrekid(INSTRUKCIJSKA_GRESKA);
+        if(gprs[c] == 0){
+        std::cout << "Error: null division\n";
+        mk_interrupt(ins_fault);
         return;
         }
-        gp_registri[a] = gp_registri[b] / gp_registri[c];
+        gprs[a] = gprs[b] / gprs[c];
     }
     else if(op_code == NOT){
-        gp_registri[a] = ~gp_registri[b];
+        gprs[a] = ~gprs[b];
     }
     else if(op_code == AND){
-        gp_registri[a] = gp_registri[b] & gp_registri[c];
+        gprs[a] = gprs[b] & gprs[c];
     }
     else if(op_code == OR){
-        gp_registri[a] = gp_registri[b] | gp_registri[c];
+        gprs[a] = gprs[b] | gprs[c];
     }
     else if(op_code == XOR){
-        gp_registri[a] = gp_registri[b] ^ gp_registri[c];
+        gprs[a] = gprs[b] ^ gprs[c];
     }
     else if(op_code == SHL){
-        gp_registri[a] = gp_registri[b] << gp_registri[c];
+        gprs[a] = gprs[b] << gprs[c];
     }
     else if(op_code == SHR){
-        gp_registri[a] = gp_registri[b] >> gp_registri[c];
+        gprs[a] = gprs[b] >> gprs[c];
     }
     else if(op_code == CSRRD){
-        gp_registri[a] = cs_registri[b];
+        gprs[a] = csrs[b];
     }
     else if(op_code == CSRWR){
-        cs_registri[a] = gp_registri[b];
+        csrs[a] = gprs[b];
     }
     else if(op_code == PUSH){
-        gp_registri[a] += d;
-        upisiInt(gp_registri[a], gp_registri[c]);
+        push(gprs[c]);
     }
     else if(op_code == POP){
-        gp_registri[a] = procitajInt(gp_registri[b]);
-        gp_registri[b] += d;
+        gprs[a] = pop();
     }
     else if(op_code == LD_MEM_REG){  
-        gp_registri[a] = procitajInt(gp_registri[b] + d);
+        if(b == 15){
+            gprs[a] = read(gprs[b] + d - 4);
+        }else{
+            gprs[a] = read(gprs[b] + d);
+
+        }
     }
     else if(op_code == LD_REG){
-        gp_registri[a] = gp_registri[b] + d;
+        gprs[a] = gprs[b] + d;
     }
     else if(op_code == ST_MEM){
-        upisiInt(gp_registri[a] + gp_registri[b] + d, gp_registri[c]);
+        write(gprs[a] + gprs[b] + d, gprs[c]);
     }
     else if(op_code == ST_MEM_MEM){
-        upisiInt(procitajInt(gp_registri[a] + gp_registri[b] + d), gp_registri[c]);
+        if(b == 15){
+            write(read(gprs[a] + gprs[b] + d - 4), gprs[c]);
+        }else{
+            write(read(gprs[a] + gprs[b] + d), gprs[c]);
+
+        }
     }
     else if(op_code == CSRWR_MEM){
-        cs_registri[a] = procitajInt(gp_registri[b] + gp_registri[c] + d);
+        csrs[a] = read(gprs[b] + gprs[c] + d);
+    }else if(op_code == CSRWR_MEM_POSTINC){
+        csrs[a] = pop();
     }
     else{
-        cout << "EMULATOR GRESKA: Nepoznata instrukcija sa kodom operacije: 0x" << hex << op_code << endl;
+        std:: cout << "EMULATOR GRESKA: Nepoznata instrukcija sa kodom operacije: 0x" << std::hex << op_code << std::endl;
     }
+
+}
+
+
+//write and read 4bytes
+void Emulator::write(int address, int data){
+    unsigned char* ptr = reinterpret_cast<unsigned char*>(&data);
+    memory[address] = ptr[3]; 
+    memory[address + 1] = ptr[2];
+    memory[address + 2] = ptr[1];
+    memory[address + 3] = ptr[0]; 
+}
+
+int Emulator::read(int address){
+    unsigned int byte_3 = static_cast<unsigned char>(memory[address])&0xff;
+    unsigned int byte_2 = static_cast<unsigned char>(memory[address + 1])&0xff;
+    unsigned int byte_1 = static_cast<unsigned char>(memory[address + 2])&0xff;
+    unsigned int byte_0 = static_cast<unsigned char>(memory[address + 3])&0xff;
+
+
+    
+    int data = (static_cast<int>(byte_3) << 24) |
+                  (static_cast<int>(byte_2) << 16) |
+                  (static_cast<int>(byte_1) << 8)  |
+                  (static_cast<int>(byte_0));
+
+    return data;
 }
 
 
 
-void Emulator::push(int podatak){
+void Emulator::push(int data){
     sp -= 4;
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(&podatak);
+    unsigned char* ptr = reinterpret_cast<unsigned char*>(&data);
     memory[sp] = ptr[3]; 
     memory[sp + 1] = ptr[2];
     memory[sp + 2] = ptr[1];
     memory[sp + 3] = ptr[0]; 
+
 }
 
 int Emulator::pop(){
-    unsigned char byte_3 = memory[sp + 3];
-    unsigned char byte_2 = memory[sp + 2];
-    unsigned char byte_1 = memory[sp + 1];
-    unsigned char byte_0 = memory[sp];     
+    unsigned char byte_3 = memory[sp];
+    unsigned char byte_2 = memory[sp + 1];
+    unsigned char byte_1 = memory[sp + 2];
+    unsigned char byte_0 = memory[sp + 3];     
 
-    int podatak = (static_cast<int>(byte_3) << 24) |
+    int data = (static_cast<int>(byte_3) << 24) |
                   (static_cast<int>(byte_2) << 16) |
                   (static_cast<int>(byte_1) << 8)  |
                   (static_cast<int>(byte_0));
 
     // Adjust stack pointer to point to the next position
     sp += 4; // Move stack pointer up by 4 bytes
-
-    return podatak;
+    return data;
 }
 
 
-void Emulator::mk_interrupt(unsigned long cause){
-  push(csrs[status]);
-  push(pc);
+void Emulator::mk_interrupt(int uzrok){
+    push(pc);
+    push(csrs[status]);
 
-  csrs[cause] = cause;
-  pc = csrs[handler]; 
+    csrs[cause] = uzrok;
+    pc = csrs[handler]; 
 
-  csrs[status] |= 0x4; 
-  csrs[status] |= 0x2; 
-  csrs[status] |= 0x1; 
+
+    csrs[status] |= 0x4; 
+    csrs[status] |= 0x2; 
+    csrs[status] |= 0x1; 
+}
+
+
+void Emulator::setup(){
+    pc = start_memory;
+    sp = mmap_registers_addr;
+
+    csrs[status] &= ~0x4; //set soft intr
+    csrs[status] &= ~0x2; //set terminal intr
+    csrs[status] &= ~0x1; //set timer intr ? no need?
+    emulating = true;
+}
+
+
+void Emulator::write_reg(){
+  std::cout << std::endl;
+  std::cout << "----------------------------------------------------------------------" << std::endl;
+  std::cout << "Emulated processor executed halt instruction.\n";
+  std::cout << "Emulated processor state:\n";
+  for(int i = 0; i < 16; i++){
+    std::string reg = "r" + std::to_string(i);
+    std::cout << "\t" << std::setw(3) << std::setfill(' ') << reg << "=0x" << std::setw(8) << std::hex << std::setfill('0') << gprs[i];
+    if(i % 4 == 3) std::cout <<  std::endl;
+  }
+  std::cout << std::endl;
 }

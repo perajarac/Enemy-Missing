@@ -46,7 +46,7 @@ void Assembler::handle_instruction(instruction op_code, std::vector<int> operand
             break;
         }
         case INT_CODE:{
-            std::pair<unsigned, std::string> to_add = std::make_pair(current_address++, "01");
+            std::pair<unsigned, std::string> to_add = std::make_pair(current_address++, "10");
             memory_content.push_back(to_add);
             for(int i = 0; i<3;i++){
                 std::pair<unsigned, std::string> to_add = std::make_pair(current_address++, "00");
@@ -165,7 +165,7 @@ void Assembler::mk_call(std::string ident){
 
 }
 
-void Assembler::mk_call(int literal){
+void Assembler::mk_call(long literal){
     if(literal>=0 && literal < 4096){
         memory_content.push_back({current_address++, "20"});
         memory_content.push_back({current_address++, "00"});
@@ -211,7 +211,7 @@ void Assembler::jump_sym(instruction ins, int gpr1, int gpr2, std::string ident)
     
 }
 
-void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
+void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, long literal){
     if(literal >= 0 && literal < 4096){
         switch(ins){
             case JMP_CODE:{
@@ -261,7 +261,7 @@ void Assembler::jump_lit(instruction ins, int gpr1, int gpr2, int literal){
         ss << std::hex << 15 << gpr1;
         memory_content.push_back({current_address++, ss.str().substr(0,2)});
         literal = (literal << 8) | gpr2;
-        literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
+        literal_flink[current_address] = lit_pool.return_index_of_literal(literal & mask);
         memory_content.push_back(std::make_pair(current_address++, "00"));
         memory_content.push_back(std::make_pair(current_address++, "00"));
 
@@ -277,7 +277,12 @@ void Assembler::resolve_jump(){
         for(auto address:sym_flink.second){ //if it is it patches memory content of jmp instruction
             for(auto data = memory_content.begin(); data != memory_content.end();data++){
                 if(data->first != address) continue;
-                int pomeraj = (section.get_base() + sym.get_value()) - address + 2; //with offset to that symbol
+                int pomeraj = ((sym.get_value()-section.get_base())-address) + 2; //with offset to that symbol
+                if (pomeraj < 0) {
+                    pomeraj = (pomeraj & 0xfff); // Keep only the 12 lowest bits (two's complement)
+
+                }
+                
                 std::stringstream ss;
                 ss << std::hex <<((pomeraj>>8)&0xf);
                 data->second[1] = ss.str()[0];
@@ -332,7 +337,6 @@ void Assembler::handle_sys_regr(std::string& op_code, unsigned reg){
 
     memory_content.push_back(std::make_pair(current_address++, "00"));
     memory_content.push_back(std::make_pair(current_address++, "00"));
-
 }
 
 void Assembler::handle_sys_regw(std::string& op_code, unsigned reg){
@@ -403,7 +407,7 @@ void Assembler::handle_word(const std::string& sym_name){
 
 
 
-void Assembler::handle_word(unsigned literal) {
+void Assembler::handle_word(long literal) {
     for (int i = 3; i >= 0; --i) {  // Start from the most significant byte
         unsigned byte = (literal >> (i * 8)) & 0xFF;
         std::stringstream ss;
@@ -453,7 +457,7 @@ void Assembler::push(int reg){
 //------------------------------LOAD INSTRUCTION------------------------------------------
 //-----------------------------literal as operand-----------------------------------------
 
-void Assembler::mem_imm_literal(int literal, int reg){
+void Assembler::mem_imm_literal(long literal, int reg){
     if(literal < 4096 && literal >= 0){
         memory_content.push_back(std::make_pair(current_address++, "91")); //load imm
         std::stringstream ss;
@@ -466,7 +470,7 @@ void Assembler::mem_imm_literal(int literal, int reg){
     }
 }
 
-void Assembler::mem_dir_literal(int literal, int reg){
+void Assembler::mem_dir_literal(long literal, int reg){
     if(literal < 4096 && literal >= 0){
         memory_content.push_back(std::make_pair(current_address++, "92")); //load imm
         std::stringstream ss;
@@ -488,7 +492,7 @@ void Assembler::mem_dir_literal(int literal, int reg){
     }
 }
 
-void Assembler::mem_dir_offset_literal(int reg1, int literal, int reg2){
+void Assembler::mem_dir_offset_literal(int reg1, long literal, int reg2){
     if(literal < 4096 && literal >= 0){
         memory_content.push_back(std::make_pair(current_address++, "92")); //load imm
         std::stringstream ss;
@@ -575,7 +579,7 @@ void Assembler::st_mem_dir_literal(int reg, int literal){
     }else{
         memory_content.push_back(std::make_pair(current_address++, "82"));
         memory_content.push_back(std::make_pair(current_address++, "0f"));
-        literal = (literal << 8) | reg;
+        literal = ((literal << 8) | reg) & mask;
         literal_flink[current_address] = lit_pool.return_index_of_literal(literal);
         memory_content.push_back(std::make_pair(current_address++, "00"));
         memory_content.push_back(std::make_pair(current_address++, "00"));
@@ -583,7 +587,7 @@ void Assembler::st_mem_dir_literal(int reg, int literal){
 }
 
 void Assembler::st_mem_dir_reg(int reg1, int reg2){
-    memory_content.push_back(std::make_pair(current_address++, "82"));
+    memory_content.push_back(std::make_pair(current_address++, "80"));
     std::stringstream ss;
     ss << std::hex << std::setw(2) << std::setfill('0') << reg1; 
     
@@ -598,7 +602,7 @@ void Assembler::st_mem_dir_reg(int reg1, int reg2){
 }
 
 
-void Assembler::st_mem_dir_offset_literal(int reg1, int literal, int reg2){
+void Assembler::st_mem_dir_offset_literal(int reg1, long literal, int reg2){
     if(literal < 4096 && literal >= 0){
         memory_content.push_back(std::make_pair(current_address++, "82"));
         std::stringstream ss;
@@ -679,10 +683,10 @@ void Assembler::resovle_symbol_flink(){
         for(auto address:sym.second){ //for every address that is coresponding with that symbol
             for (auto it = memory_content.begin(); it != memory_content.end(); ++it) { //searching memmory to find one of the addresses that coresponds with symbol
                 if (it->first == address) { //if search is success adds offset to that symbol in literal pool
-                    unsigned pomeraj = current_address - address + 2;
+                    int pomeraj = current_address - address + 2;
 
-                    unsigned low_byte = pomeraj & 0xFF;         
-                    unsigned high_nibble = ((pomeraj) & 0xF00) >> 8;
+                    int low_byte = pomeraj & 0xFF;         
+                    int high_nibble = ((pomeraj) & 0xF00) >> 8;
 
                     std::stringstream ss;
                     ss << std::hex << (high_nibble);
@@ -694,26 +698,28 @@ void Assembler::resovle_symbol_flink(){
                         ss_low << std::setw(2) << std::setfill('0') << std::hex << low_byte;
                         it->second = ss_low.str();
                     }
-                        break;
+
+                    symbol curr_sym = sym_table[sym_index(sym.first)];
+                    section& current_section = section_tables.back();
+                    bool ternar = curr_sym.get_bind() == LOC;
+                    int offset = current_address-current_section.get_base();
+                    current_section.relocation_table.push_back({offset, curr_sym.get_name(), (ternar ? curr_sym.get_value():0), (ternar? true:false)}); //put symbol in reloc table of section
+                    if(section_tables.back().get_lit_pool_base() == 0) section_tables.back().set_lit_pool_base(current_address);
+                    memory_content.push_back(std::make_pair(current_address++, "00"));
+                    memory_content.push_back(std::make_pair(current_address++, "00"));
+                    memory_content.push_back(std::make_pair(current_address++, "00"));
+                    memory_content.push_back(std::make_pair(current_address++, "00"));
+                    break;
                         
                 }
             }
         }
-        symbol curr_sym = sym_table[sym_index(sym.first)];
-        section& current_section = section_tables.back();
-        bool ternar = curr_sym.get_bind() == LOC;
-        int offset = current_address-current_section.get_base();
-        current_section.relocation_table.push_back({offset, curr_sym.get_name(), (ternar ? curr_sym.get_value():0), (ternar? true:false)}); //put symbol in reloc table of section
-        if(section_tables.back().get_lit_pool_base() == 0) section_tables.back().set_lit_pool_base(current_address);
-        memory_content.push_back(std::make_pair(current_address++, "00"));
-        memory_content.push_back(std::make_pair(current_address++, "00"));
-        memory_content.push_back(std::make_pair(current_address++, "00"));
-        memory_content.push_back(std::make_pair(current_address++, "00"));
+
     }
 }
 
 void Assembler::resolve_literal_flink(){
-    std::unordered_map<int,int> processed;
+    std::unordered_map<long,long> processed;
     for (const auto& [memory_address, inde] : literal_flink) {
         auto it = std::find_if(
             memory_content.begin(), 
@@ -724,15 +730,15 @@ void Assembler::resolve_literal_flink(){
         );
 
         if (it != memory_content.end()) {
-            int index = inde;
-            int temp  = (lit_pool.literals[index] & 0xf);
-            int key = lit_pool.literals[index] >> 8;
+            long index = inde;
+            long temp  = (lit_pool.literals[index] & 0xf);
+            long key = lit_pool.literals[index] >> 8;
 
             // Use std::find_if to check if the key is in the processed map
             auto processed_it = std::find_if(
                 processed.begin(), 
                 processed.end(), 
-                [key](const std::pair<const int, int>& element) {
+                [key](const std::pair<const long, long>& element) {
                     return element.first == key;
                 }
             );
@@ -1030,7 +1036,7 @@ void Assembler::wregim(int opr_reg, int reg){
 }
 
 //put literal in literal pool and reserve place for offset
-void Assembler::putlitip(int literal, int reg){
+void Assembler::putlitip(long literal, int reg){
     std::stringstream ss;
     ss << std::hex << reg << 15;
     memory_content.push_back(std::make_pair(current_address++, ss.str().substr(0,2)));

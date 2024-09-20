@@ -1,0 +1,83 @@
+----------Table of sections----------
+Name:          Start:         Size:          Lit pool adrr: 
+my_code        0              110            cc             
+my_data        110            1c             0              
+-------------------------------------
+----------------Symbol Table----------------
+Num:      Value:    Bind:          Section:       Name:          
+0         UND       EXT            UND            handler        
+1         UND       EXT            UND            mathAdd        
+2         UND       EXT            UND            mathSub        
+3         UND       EXT            UND            mathMul        
+4         UND       EXT            UND            mathDiv        
+5         0         GLO            my_code        my_start       
+6         0         GLO            my_data        value1         
+7         4         GLO            my_data        value2         
+8         8         GLO            my_data        value3         
+9         c         GLO            my_data        value4         
+a         10        GLO            my_data        value5         
+b         14        GLO            my_data        value6         
+c         18        GLO            my_data        value7         
+---------------------------------------------
+------------Section tables-----------
+0:	c4	00	ef	92	08	01	1f	92
+8:	00	00	11	94	00	00	00	10
+10:	01	00	10	91	fc	1f	e0	81
+18:	01	00	10	91	fc	1f	e0	81
+20:	a8	00	0f	21	dc	10	0f	82
+28:	02	00	10	91	fc	1f	e0	81
+30:	01	00	10	91	fc	1f	e0	81
+38:	9c	00	0f	21	ac	10	0f	82
+40:	07	00	10	91	fc	1f	e0	81
+48:	0b	00	10	91	fc	1f	e0	81
+50:	7c	00	0f	21	8c	10	0f	82
+58:	05	00	10	91	fc	1f	e0	81
+60:	19	00	10	91	fc	1f	e0	81
+68:	88	00	0f	21	8c	10	0f	82
+70:	04	00	10	91	fc	1f	e0	81
+78:	18	00	10	91	fc	1f	e0	81
+80:	74	00	0f	21	54	10	0f	82
+88:	48	00	1f	92	00	00	11	92
+90:	74	00	2f	92	00	00	22	92
+98:	54	00	3f	92	00	00	33	92
+a0:	44	00	4f	92	00	00	44	92
+a8:	54	00	5f	92	00	00	55	92
+b0:	2c	00	6f	92	00	00	66	92
+b8:	50	00	7f	92	00	00	77	92
+c0:	00	00	00	00	fe	fe	ff	ff
+c8:	00	00	00	f0	00	00	00	00
+d0:	00	00	00	00	00	00	00	00
+d8:	00	00	00	00	00	00	00	00
+e0:	00	00	00	00	00	00	00	00
+e8:	00	00	00	00	00	00	00	00
+f0:	00	00	00	00	00	00	00	00
+f8:	00	00	00	00	00	00	00	00
+100:	00	00	00	00	00	00	00	00
+108:	00	00	00	00	00	00	00	00
+110:	00	00	00	00	00	00	00	00
+118:	00	00	00	00	00	00	00	00
+120:	00	00	00	00	00	00	00	00
+128:	00	00	00	00
+-------------------------------------
+----------------Reloc Table----------------
+Section:            Symbol:             Offset:   Addend:   
+my_code             
+                    mathSub             cc                  0                   
+                    value1              d0                  0                   
+                    mathAdd             d4                  0                   
+                    value6              d8                  0                   
+                    value6              dc                  0                   
+                    value4              e0                  0                   
+                    value4              e4                  0                   
+                    value3              e8                  0                   
+                    value3              ec                  0                   
+                    mathDiv             f0                  0                   
+                    mathDiv             f4                  0                   
+                    value5              f8                  0                   
+                    value5              fc                  0                   
+                    value2              100                 0                   
+                    value2              104                 0                   
+                    value7              108                 0                   
+                    handler             10c                 0                   
+my_data             
+---------------------------------------------

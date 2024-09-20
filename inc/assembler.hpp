@@ -7,6 +7,8 @@
 class Assembler{
 public:
 
+    static long constexpr mask = 0xffffffffff;
+
     enum instruction {
         HALT_CODE, INT_CODE, IRET_CODE, CALL_CODE, RET_CODE,JMP_CODE, BEQ_CODE, BNE_CODE, BGT_CODE,
         PUSH_CODE, POP_CODE, XCHG_CODE, ADD_CODE, SUB_CODE, MUL_CODE, DIV_CODE,
@@ -20,10 +22,11 @@ public:
 
     struct literal_pool{
         unsigned _base;
-        std::vector<int> literals;
+        std::vector<long> literals;
 
-        int return_index_of_literal(int literal){
-            if(std::find(literals.begin(), literals.end(), literal>>8) != literals.end()){
+        int return_index_of_literal(long literal){
+            literal = literal & mask;
+            if(std::find(literals.begin(), literals.end(), literal) != literals.end()){
                 auto it = std::find(literals.begin(), literals.end(), literal);
                 return std::distance(literals.begin(), it);
             }else{
@@ -71,21 +74,21 @@ public:
 
     static void handle_skip(unsigned bytes);
     static void handle_word(const std::string& sym_name);
-    static void handle_word(unsigned literal);
+    static void handle_word(long literal);
     static void handle_bind_type(bind_type bt, std::string sym_name);
     static void handle_ascii(std::string& ascii);
 
     //---------------------load------------------------------------
-    static void mem_imm_literal(int literal, int reg);
-    static void mem_dir_literal(int literal, int reg);
-    static void mem_dir_offset_literal(int reg1, int literal, int reg2);
+    static void mem_imm_literal(long literal, int reg);
+    static void mem_dir_literal(long literal, int reg);
+    static void mem_dir_offset_literal(int reg1, long literal, int reg2);
     static void mem_dir_register(int opr_reg, int reg);
     static void mem_ind_register(int opr_reg, int reg);
     static void mem_imm_symbol(std::string ident, int reg);
     static void mem_dir_symbol(std::string ident, int reg);
     //--------------------store------------------------------------
     static void st_mem_dir_literal(int reg, int address);
-    static void st_mem_dir_offset_literal(int reg1, int literal, int reg2);
+    static void st_mem_dir_offset_literal(int reg1, long literal, int reg2);
     static void st_mem_dir_reg(int reg1, int reg2);
     static void st_mem_dir_symbol(std::string ident, int reg);
 
@@ -93,11 +96,11 @@ public:
 
     static void mk_iret();
     static void mk_call(std::string ident);
-    static void mk_call(int literal);
+    static void mk_call(long literal);
     static void pop(int reg, bool csr);
     static void push(int reg);
     static void jump_sym(instruction ins, int gpr1, int gpr2, std::string ident);
-    static void jump_lit(instruction ins, int gpr1, int gpr2, int literal);
+    static void jump_lit(instruction ins, int gpr1, int gpr2, long literal);
     static void resolve_jump();
 
     static bool ass_end;
@@ -120,7 +123,7 @@ private:
 
     static void wliteralim(int literal);
     static void wregim(int opr_reg, int reg);
-    static void putlitip(int literal, int reg);
+    static void putlitip(long literal, int reg);
     static void wlitims(int literal, int reg);
 
     static std::map<int, int> ascii_map; //maps occuring of ascii, helper strcuture to ensure that writing in memmory is  good

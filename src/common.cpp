@@ -83,3 +83,11 @@ int count_sec_length(const std::vector<section>& vec){
     }
     return sum_length;
 }
+
+char hex_to_string(const std::string& hex_string){
+    unsigned int byte;
+        std::stringstream ss;
+        ss << std::hex << hex_string;
+        ss >> byte;
+        return static_cast<unsigned char>(byte);
+}

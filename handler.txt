@@ -1,0 +1,35 @@
+----------Table of sections----------
+Name:          Start:         Size:          Lit pool adrr: 
+my_handler     0              58             4c             
+-------------------------------------
+----------------Symbol Table----------------
+Num:      Value:    Bind:          Section:       Name:          
+0         UND       EXT            UND            isr_timer      
+1         UND       EXT            UND            isr_terminal   
+2         UND       EXT            UND            isr_software   
+3         0         GLO            my_handler     handler        
+4         34        LOC            my_handler     handle_timer   
+5         3c        LOC            my_handler     handle_terminal
+6         44        LOC            my_handler     handle_software
+7         24        LOC            my_handler     finish         
+---------------------------------------------
+------------Section tables-----------
+0:	fc	1f	e0	81	fc	2f	e0	81
+8:	00	00	12	90	02	00	20	91
+10:	24	20	f1	31	03	00	20	91
+18:	24	20	f1	31	04	00	20	91
+20:	24	20	f1	31	04	00	2e	93
+28:	04	00	1e	93	04	00	0e	97
+30:	04	00	fe	93	18	00	0f	21
+38:	ec	0f	f0	30	14	00	0f	21
+40:	e4	0f	f0	30	10	00	0f	21
+48:	dc	0f	f0	30	00	00	00	00
+50:	00	00	00	00	00	00	00	00
+-------------------------------------
+----------------Reloc Table----------------
+Section:            Symbol:             Offset:   Addend:   
+my_handler          
+                    isr_timer           4c                  0                   
+                    isr_terminal        50                  0                   
+                    isr_software        54                  0                   
+---------------------------------------------
