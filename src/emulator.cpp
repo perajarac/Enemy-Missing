@@ -229,7 +229,7 @@ void Emulator::lae_ins(){
         csrs[a] = pop();
     }
     else{
-        std:: cout << "EMULATOR GRESKA: Nepoznata instrukcija sa kodom operacije: 0x" << std::hex << op_code << std::endl;
+        std:: cout << "Error, unknown instruction on address x" << std::hex << op_code << std::endl;
     }
 
 
@@ -237,7 +237,10 @@ void Emulator::lae_ins(){
 
 
 //write and read 4bytes
-void Emulator::write(int address, long data){
+void Emulator::write(int address, int data){
+    if(address == term_out){
+        std::cout << (char)data << std::flush;
+    }
     unsigned char* ptr = reinterpret_cast<unsigned char*>(&data);
     memory[address] = ptr[3]; 
     memory[address + 1] = ptr[2];
@@ -336,7 +339,7 @@ void Emulator::setup_terminal(){
   
   new_setup = old_setup;
 
-  new_setup.c_lflag &= ~(ECHONL | ICANON | IEXTEN);
+  new_setup.c_lflag &= ~(ECHO |ECHONL | ICANON | IEXTEN);
   
   new_setup.c_cc[VTIME] = 0; 
   new_setup.c_cc[VMIN] = 0; 

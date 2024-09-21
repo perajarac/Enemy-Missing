@@ -20,7 +20,6 @@ int main(int argc, char* argv[]) {
     Emulator::setup();
 
     Emulator::setup_terminal();
-    int i =0;
     while(!Emulator::end()){
         Emulator::lae_ins();
         Emulator::read_from_stdin();
@@ -28,7 +27,6 @@ int main(int argc, char* argv[]) {
             Emulator::mk_interrupt(Emulator::terminal_int);
             Emulator::term_int = false;  
         }
-        if(i==20) break;
     }
 
     Emulator::restart_terminal();

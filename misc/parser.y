@@ -128,7 +128,15 @@
 			Assembler::handle_ascii(ascii);
 		}
 		| TOKEN_END {
-			parse = 0;
+			Assembler::end_last_section();
+			Assembler::resolve_local_sym_reloc();
+			Assembler::local_sym_errors();
+			Assembler::write_section_context();
+			Assembler::write_symbol_table_context();
+			Assembler::write_memory_content();
+			Assembler::write_realoc();
+			Assembler::write_object_file();
+		exit(1);
 		}
 		| TOKEN_IDENT TOKEN_COLON  {
 			std::string ident = $1;

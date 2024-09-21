@@ -136,7 +136,7 @@ void Linker::merge_same_sections(){
                 section._base = length;
                 for(auto& rel_entry:section.relocation_table){
                     rel_entry.offset += length;
-                    // if(rel_entry.is_section) rel_entry.addend += length;
+                    if(rel_entry.is_section) rel_entry.addend += length;
                 }
                 merged_sec_table[section.get_name()].push_back(section);
             }
@@ -257,7 +257,7 @@ void Linker::map_sections(){
         for(auto& section : vector_of_merged_sections){
             for(auto& rel_node : section.relocation_table){
                 rel_node.offset+=elem.second;
-                // if(rel_node.is_section) rel_node.addend += (section._base + elem.second);
+                if(rel_node.is_section) rel_node.addend += (section._base + elem.second);
             }
             if(skip_first == 1) {
                 skip_first--;
@@ -288,7 +288,7 @@ void Linker::map_sections(){
         for(auto& section : vector_of_merged_sections){
             for(auto& rel_node : section.relocation_table){
                 rel_node.offset+=first_free_address;
-                // if(rel_node.is_section) rel_node.addend += (section._base + first_free_address);
+                if(rel_node.is_section) rel_node.addend += (section._base + first_free_address);
             }
             if(skip_first == 1) {
                 skip_first--;

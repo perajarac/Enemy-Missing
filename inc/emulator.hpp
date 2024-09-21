@@ -46,7 +46,7 @@ private:
     static void push(int data);
     static int pop();
 
-    static void write(int addr, long data);
+    static void write(int addr, int data);
     static void write_byte(int address, char data);
     static int read(int addr);
     
